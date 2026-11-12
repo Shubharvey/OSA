@@ -50,11 +50,12 @@ export default function HomePage() {
   const [feedError, setFeedError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!supabase) return;
+    const client = supabase;
+    if (!client) return;
     let cancelled = false;
 
     async function loadFeed() {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("feed_entries")
         .select("id, category, eyebrow, title, summary, source_name, source_url, published_at, reading_time_minutes, signal_level, is_featured")
         .eq("status", "published")
