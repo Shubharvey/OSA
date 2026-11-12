@@ -1,6 +1,7 @@
 "use client";
 
-import { Activity, BriefcaseBusiness, Cpu, GraduationCap, LayoutDashboard, Rocket, Settings2 } from "lucide-react";
+import { Activity, BriefcaseBusiness, Cpu, GraduationCap, LayoutDashboard, NotebookPen, Rocket, Settings2 } from "lucide-react";
+import Link from "next/link";
 import type { Category } from "@/types/intelligence";
 
 const links: { label: Category; icon: typeof LayoutDashboard }[] = [
@@ -31,6 +32,10 @@ export function Sidebar({ active, onSelect }: { active: Category; onSelect: (cat
           </button>
         ))}
       </nav>
+      <p className="mb-3 mt-9 px-3 text-[10px] font-semibold tracking-[0.2em] text-slate-600">YOUR PERSONAL SPACE</p>
+      <Link href="/my-space" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white">
+        <NotebookPen size={17}/> My Space
+      </Link>
       <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.03] p-4">
         <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-300"><Settings2 size={14}/> Personalisation</div>
         <p className="text-xs leading-5 text-slate-500">Your signal, your world. Personalised intelligence is coming soon.</p>
