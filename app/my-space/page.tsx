@@ -1,12 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, BookOpen, Brain, LockKeyhole, LogOut, NotebookPen, Send, ShieldCheck, Trash2, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Brain, Check, LockKeyhole, LogOut, NotebookPen, Plus, Send, ShieldCheck, Trash2, X, XCircle } from "lucide-react";
 import Link from "next/link";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 
-type Entry = {
+type InterestSignal = {\n  id: string;\n  topic: string;\n  source: "user_selected" | "user_approved_entry" | "saved_content";\n  confidence: number;\n  status: "pending" | "approved" | "rejected";\n  created_at: string;\n};\n\ntype Entry = {
   id: string;
   title: string;
   body: string;
@@ -36,7 +36,7 @@ export default function MySpacePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [entryPendingDelete, setEntryPendingDelete] = useState<Entry | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState(false);\n  const [interestSignals, setInterestSignals] = useState<InterestSignal[]>([]);\n  const [newInterest, setNewInterest] = useState("");\n  const [savingInterest, setSavingInterest] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -69,6 +69,41 @@ export default function MySpacePage() {
       });
     return () => { active = false; };
   }, [session]);
+
+  useEffect(() => {
+    if (!supabase || !session?.user) { setInterestSignals([]); return; }
+    let active = true;
+    supabase.from("personal_interest_signals").select("id, topic, source, confidence, status, created_at").order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) setMessage(error.message);
+        else setInterestSignals((data ?? []) as InterestSignal[]);
+      });
+    return () => { active = false; };
+  }, [session]);
+
+  async function addInterest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase || !session?.user || !newInterest.trim()) return;
+    setSavingInterest(true); setMessage("");
+    const topic = newInterest.trim().replace(/\\s+/g, " ");
+    const { data, error } = await supabase.from("personal_interest_signals").insert({
+      user_id: session.user.id, topic, source: "user_selected", status: "approved",
+      confidence: 1, reviewed_at: new Date().toISOString(),
+    }).select("id, topic, source, confidence, status, created_at").single();
+    if (error) setMessage(error.code === "23505" ? "That interest is already on your list." : error.message);
+    else if (data) { setInterestSignals((current) => [data as InterestSignal, ...current]); setNewInterest(""); setMessage("Interest added to your personalisation settings."); }
+    setSavingInterest(false);
+  }
+
+  async function reviewInterest(id: string, status: "approved" | "rejected") {
+    if (!supabase) return;
+    const { data, error } = await supabase.from("personal_interest_signals").update({
+      status, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    }).eq("id", id).select("id, topic, source, confidence, status, created_at").single();
+    if (error) setMessage(error.message);
+    else if (data) setInterestSignals((current) => current.map((signal) => signal.id === id ? data as InterestSignal : signal));
+  }
 
   async function requestSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -184,6 +219,22 @@ export default function MySpacePage() {
               <div className="rounded-2xl border border-[#c7f36b]/15 bg-[#c7f36b]/5 p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#d8f5a0]"><ShieldCheck size={17}/> Private by design</div>
                 <p className="mt-2 text-xs leading-5 text-slate-400">Your notes are protected by Supabase Row Level Security. Only your signed-in account can read, change or delete them. AI analysis is opt-in per entry and is not active yet.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-[#11151d] p-5">
+                <div className="mb-4 flex items-center gap-2"><Brain size={17} className="text-[#c7f36b]" /><h2 className="font-semibold">Your interests</h2></div>
+                <p className="mb-4 text-xs leading-5 text-slate-500">Add topics you want OSA to prioritise. Interests you add yourself are approved immediately. Diary-based suggestions will appear here for your review before they affect recommendations.</p>
+                <form onSubmit={addInterest} className="mb-4 flex gap-2">
+                  <input value={newInterest} onChange={(event) => setNewInterest(event.target.value)} maxLength={80} placeholder="e.g. Investment operations" aria-label="Add an interest" className="h-10 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#090b10] px-3 text-xs outline-none focus:border-[#c7f36b]/40" />
+                  <button disabled={savingInterest || !newInterest.trim()} className="flex h-10 items-center gap-1 rounded-xl bg-[#c7f36b] px-3 text-xs font-semibold text-[#10150a] disabled:opacity-50"><Plus size={14} /> Add</button>
+                </form>
+                {interestSignals.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-xs leading-5 text-slate-500">No interests added yet. Your approved interests will be kept here.</p> : (
+                  <div className="space-y-2">{interestSignals.map((signal) => (
+                    <div key={signal.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/10 px-3 py-3">
+                      <div className="min-w-0"><p className="truncate text-sm text-slate-200">{signal.topic}</p><p className="mt-1 text-[10px] text-slate-500">{signal.source === "user_selected" ? "Added by you" : signal.source === "user_approved_entry" ? "Suggested from your diary" : "From saved content"} · {signal.status === "pending" ? "Awaiting your review" : signal.status === "approved" ? "Approved" : "Not approved"}</p></div>
+                      {signal.status === "pending" ? <div className="flex shrink-0 gap-1"><button type="button" onClick={() => reviewInterest(signal.id, "approved")} aria-label={`Approve ${signal.topic}`} className="rounded-lg p-2 text-[#c7f36b] hover:bg-[#c7f36b]/10"><Check size={16}/></button><button type="button" onClick={() => reviewInterest(signal.id, "rejected")} aria-label={`Reject ${signal.topic}`} className="rounded-lg p-2 text-red-300 hover:bg-red-400/10"><XCircle size={16}/></button></div> : <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] ${signal.status === "approved" ? "bg-[#c7f36b]/10 text-[#d8f5a0]" : "bg-white/5 text-slate-500"}`}>{signal.status === "approved" ? "Approved" : "Rejected"}</span>}
+                    </div>
+                  ))}</div>
+                )}
               </div>
               <div className="rounded-2xl border border-white/10 bg-[#11151d] p-5">
                 <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">Your entries</h2><span className="text-xs text-slate-500">{entries.length}</span></div>
