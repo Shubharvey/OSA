@@ -86,7 +86,7 @@ export default function MySpacePage() {
     event.preventDefault();
     if (!supabase || !session?.user || !newInterest.trim()) return;
     setSavingInterest(true); setMessage("");
-    const topic = newInterest.trim().replace(/\\s+/g, " ");
+    const topic = newInterest.trim().replace(/\s+/g, " ");
     const { data, error } = await supabase.from("personal_interest_signals").insert({
       user_id: session.user.id, topic, source: "user_selected", status: "approved",
       confidence: 1, reviewed_at: new Date().toISOString(),
