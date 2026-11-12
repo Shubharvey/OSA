@@ -1,75 +1,59 @@
 # OSA — One Step Ahead
 
-A personalised global intelligence platform that simplifies markets, emerging technologies, startups and career opportunities.
+A personal intelligence companion that combines trustworthy global information with a user's own interests, goals and experiences.
 
 ## Product direction
 
-OSA brings useful global signals into one focused, source-attributed intelligence feed. The first milestone is a responsive dashboard with category navigation, search and intelligence cards. The intelligence pipeline and personalisation layer will follow once the product experience is established.
+OSA helps people understand what is happening in the world and connect it to what they are trying to learn, build and become. The product combines a source-attributed intelligence feed, a private personal space, user-approved personalisation and short-form explainers.
+
+See [docs/product-architecture.md](docs/product-architecture.md) for the product principles, privacy boundaries and roadmap.
 
 ## Stack
 
 - Next.js 15 + React 19 + TypeScript
 - Tailwind CSS 4
-- Supabase (client foundation added; credentials not yet configured)
+- Supabase Auth + Postgres + Row Level Security
 - GitHub
-- Vercel (deployment not yet configured)
+- Vercel
 
-## Current MVP
+## Current product
 
-- Responsive dark-mode intelligence dashboard
-- Navigation across Markets, Startups, Technology, Career and Learning
-- Category filtering and client-side search
-- Reusable intelligence cards with source attribution fields
-- Typed intelligence model and clearly labelled prototype sample content
-- Supabase browser-client foundation and environment-variable example
+- Responsive intelligence dashboard across Markets, Startups, Technology, Career and Learning.
+- Search and category filtering over published feed entries.
+- Source-attributed intelligence stored in Supabase.
+- My Space private diary with email magic-link sign-in.
+- Per-entry, opt-in consent field for future AI analysis (analysis is not active yet).
+- Private diary records protected by Supabase Row Level Security.
+- Foundation schema for goals, user-approved interest signals and hybrid OSA Shorts.
+- English-only launch; localisation is planned as a later milestone.
 
-> The current feed contains illustrative prototype entries, not live news. Each sample is explicitly labelled as an OSA Research Preview. Do not treat it as current market information or investment advice.
+## Database setup
+
+The original feed schema is in `supabase/schema.sql`. The first curated feed is in `supabase/seed-edition-001.sql`.
+
+For the personal intelligence foundation, run `supabase/personal-intelligence.sql` in the Supabase SQL Editor after the original schema.
 
 ## Run locally
 
 1. Install Node.js (LTS).
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Copy `.env.example` to `.env.local` and add your Supabase project URL and anon key when Supabase is configured.
-4. Start the development server:
-
-   ```bash
-   npm run dev
-   ```
-
+2. Install dependencies: `npm install`.
+3. Copy `.env.example` to `.env.local` and set:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the Supabase publishable key is accepted here)
+4. Start the development server: `npm run dev`.
 5. Open http://localhost:3000.
 
-## Project structure
+## Supabase Auth configuration
 
-```text
-app/                  Next.js routes and global styles
-components/cards/     Reusable intelligence cards
-components/navigation/Navigation components
-lib/intelligence/     Feed data and intelligence logic
-lib/supabase/         Supabase client
-types/                Shared TypeScript models
-public/               Static assets
-```
+Enable Email authentication in Supabase. Set the Site URL to the deployed OSA domain and add that domain plus `/my-space` to the allowed Redirect URLs. For local development, also allow `http://localhost:3000/**`.
 
-## Environment variables
+Never commit database passwords, Supabase secret keys or service-role keys. Privileged operations must remain server-side.
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+## Privacy and development principles
 
-Never commit secrets or service-role keys. Keep privileged Supabase operations server-side.
-
-## Next milestones
-
-1. Connect Supabase and define the feed-entry schema.
-2. Replace prototype entries with verified, source-linked records.
-3. Add saved items and personalisation.
-4. Add ingestion and editorial review workflows.
-5. Deploy the MVP to Vercel.
-
-## Development principles
-
-GitHub is the source of truth. Keep changes small, reviewable and documented. Prioritise trustworthy sourcing, useful context and a calm product experience.
+- Personal entries are private to their owner under Row Level Security.
+- Diary analysis is opt-in per entry and defaults to off.
+- The current app only records consent; it does not yet send diary content to an AI service.
+- Derived personal interests must be user-reviewable and deletable before they affect recommendations.
+- Public feed and Shorts content must retain source attribution and rights clearance.
+- GitHub is the source of truth. Keep changes small, reviewable and documented.
