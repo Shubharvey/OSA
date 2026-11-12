@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, BookOpen, Brain, LockKeyhole, LogOut, NotebookPen, Send, ShieldCheck } from "lucide-react";
+import { ArrowLeft, BookOpen, Brain, LockKeyhole, LogOut, NotebookPen, Send, ShieldCheck, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
@@ -35,6 +35,8 @@ export default function MySpacePage() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [entryPendingDelete, setEntryPendingDelete] = useState<Entry | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -105,11 +107,18 @@ export default function MySpacePage() {
     setSaving(false);
   }
 
-  async function deleteEntry(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from("personal_entries").delete().eq("id", id);
+  async function deleteEntry() {
+    if (!supabase || !entryPendingDelete || deleting) return;
+    setDeleting(true);
+    setMessage("");
+    const { error } = await supabase.from("personal_entries").delete().eq("id", entryPendingDelete.id);
     if (error) setMessage(error.message);
-    else setEntries((current) => current.filter((entry) => entry.id !== id));
+    else {
+      setEntries((current) => current.filter((entry) => entry.id !== entryPendingDelete.id));
+      setMessage("Your entry has been permanently deleted.");
+    }
+    setDeleting(false);
+    setEntryPendingDelete(null);
   }
 
   return (
@@ -178,7 +187,7 @@ export default function MySpacePage() {
               </div>
               <div className="rounded-2xl border border-white/10 bg-[#11151d] p-5">
                 <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">Your entries</h2><span className="text-xs text-slate-500">{entries.length}</span></div>
-                {entries.length === 0 ? <p className="text-sm leading-6 text-slate-500">Your space is ready. Your saved thoughts will appear here.</p> : <div className="space-y-3">{entries.map((entry) => <article key={entry.id} className="rounded-xl border border-white/10 bg-black/10 p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] uppercase tracking-wider text-[#c7f36b]">{entryTypes.find((type) => type.value === entry.entry_type)?.label ?? entry.entry_type}</p><h3 className="mt-1 font-medium">{entry.title || "Untitled entry"}</h3></div><button onClick={() => deleteEntry(entry.id)} className="text-xs text-slate-500 hover:text-red-300">Delete</button></div><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-400">{entry.body}</p><p className="mt-3 text-[10px] text-slate-600">{new Date(entry.created_at).toLocaleString()} · {entry.ai_analysis_consent ? "Analysis allowed" : "Private — not for analysis"}</p></article>)}</div>}
+                {entries.length === 0 ? <p className="text-sm leading-6 text-slate-500">Your space is ready. Your saved thoughts will appear here.</p> : <div className="space-y-3">{entries.map((entry) => <article key={entry.id} className="rounded-xl border border-white/10 bg-black/10 p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] uppercase tracking-wider text-[#c7f36b]">{entryTypes.find((type) => type.value === entry.entry_type)?.label ?? entry.entry_type}</p><h3 className="mt-1 font-medium">{entry.title || "Untitled entry"}</h3></div><button type="button" onClick={() => setEntryPendingDelete(entry)} aria-label={`Delete ${entry.title || "untitled entry"}`} className="rounded-lg px-2 py-1 text-xs text-slate-500 transition hover:bg-red-400/10 hover:text-red-300">Delete</button></div><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-400">{entry.body}</p><p className="mt-3 text-[10px] text-slate-600">{new Date(entry.created_at).toLocaleString()} · {entry.ai_analysis_consent ? "Analysis allowed" : "Private — not for analysis"}</p></article>)}</div>}
               </div>
               <div className="rounded-2xl border border-white/10 p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold"><Brain size={16} className="text-[#c7f36b]"/> Personal intelligence, coming next</div>
@@ -188,6 +197,60 @@ export default function MySpacePage() {
           </div>
         )}
       </div>
+
+      {entryPendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !deleting) setEntryPendingDelete(null);
+          }}
+        >
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-entry-title"
+            aria-describedby="delete-entry-description"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#141923] p-6 shadow-2xl"
+          >
+            <div className="mb-4 flex items-start justify-between">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-400/10 text-red-300">
+                <Trash2 size={20} />
+              </div>
+              <button
+                type="button"
+                onClick={() => setEntryPendingDelete(null)}
+                disabled={deleting}
+                aria-label="Close confirmation"
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <h2 id="delete-entry-title" className="text-lg font-semibold text-white">Delete this entry?</h2>
+            <p id="delete-entry-description" className="mt-2 text-sm leading-6 text-slate-400">
+              You are about to permanently delete <span className="font-medium text-slate-200">“{entryPendingDelete.title || "Untitled entry"}”</span>. This cannot be undone.
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setEntryPendingDelete(null)}
+                disabled={deleting}
+                className="h-11 rounded-xl border border-white/10 px-5 text-sm font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={deleteEntry}
+                disabled={deleting}
+                className="flex h-11 items-center justify-center gap-2 rounded-xl bg-red-500 px-5 text-sm font-semibold text-white transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 size={15} /> {deleting ? "Deleting…" : "Delete permanently"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
