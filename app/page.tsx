@@ -54,8 +54,8 @@ export default function HomePage() {
     if (!client) return;
     let cancelled = false;
 
-    async function loadFeed() {
-      const { data, error } = await client
+    const loadFeed = async (supabaseClient: NonNullable<typeof supabase>) => {
+      const { data, error } = await supabaseClient
         .from("feed_entries")
         .select("id, category, eyebrow, title, summary, source_name, source_url, published_at, reading_time_minutes, signal_level, is_featured")
         .eq("status", "published")
@@ -68,9 +68,9 @@ export default function HomePage() {
         setItems(((data ?? []) as FeedRow[]).map(mapFeedRow));
       }
       setLoading(false);
-    }
+    };
 
-    loadFeed();
+    void loadFeed(client);
     return () => { cancelled = true; };
   }, []);
 
