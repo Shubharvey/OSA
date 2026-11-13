@@ -83,7 +83,7 @@ export default function HomePage() {
   const remaining = featured ? filtered.filter((item) => item.id !== featured.id) : filtered;
 
   return (
-    <div className="flex min-h-screen bg-[#090b10]">
+    <div className="flex min-h-screen flex-col bg-[#090b10] lg:flex-row">
       <Sidebar active={active} onSelect={setActive}/>
       <main className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 flex min-h-[64px] items-center justify-between gap-3 border-b border-white/10 bg-[#090b10]/95 px-4 py-3 backdrop-blur-xl sm:h-[72px] sm:px-5 md:px-9">
