@@ -6,7 +6,16 @@ import Link from "next/link";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 
-type InterestSignal = {\n  id: string;\n  topic: string;\n  source: "user_selected" | "user_approved_entry" | "saved_content";\n  confidence: number;\n  status: "pending" | "approved" | "rejected";\n  created_at: string;\n};\n\ntype Entry = {
+type InterestSignal = {
+  id: string;
+  topic: string;
+  source: "user_selected" | "user_approved_entry" | "saved_content";
+  confidence: number;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+};
+
+type Entry = {
   id: string;
   title: string;
   body: string;
