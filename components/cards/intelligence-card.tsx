@@ -5,7 +5,7 @@ export function IntelligenceCard({ item, featured = false }: { item: Intelligenc
   return (
     <article className={`group flex h-full min-w-0 flex-col rounded-2xl border border-white/10 bg-[#11151d] p-4 transition hover:border-[#c7f36b]/40 hover:bg-[#141a22] sm:p-5 ${featured ? "md:p-7" : ""}`}>
       <div className="mb-5 flex items-center justify-between gap-3">
-        <span className="min-w-0 break-words text-[10px]] font-bold tracking-[0.12em] text-[#c7f36b]">{item.eyebrow}</span>
+        <span className="min-w-0 break-words text-[10px] font-bold tracking-[0.12em] text-[#c7f36b]">{item.eyebrow}</span>
         <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] text-slate-400">{item.signal}</span>
       </div>
       <div className="mb-2 text-xs text-slate-500">{item.category} <span className="px-1.5 text-slate-700">/</span> {item.publishedAt}</div>
