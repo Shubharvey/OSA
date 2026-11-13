@@ -21,8 +21,21 @@ jobs:
             echo "Missing OSA_INGEST_URL or INGEST_SECRET repository secrets."
             exit 1
           fi
-          curl --fail --silent --show-error \
+
+          response=$(curl --silent --show-error \
             --max-time 70 \
+            --write-out "\\n%{http_code}" \
             -X POST "$OSA_INGEST_URL" \
             -H "Authorization: Bearer $INGEST_SECRET" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json")
+
+          status="${response##*$'\\n'}"
+          body="${response%$'\\n'*}"
+
+          echo "Collector response:"
+          echo "$body"
+          echo "HTTP status: $status"
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            exit 1
+          fi
