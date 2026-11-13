@@ -180,12 +180,12 @@ export default function ReviewPage() {
 
   function triageScore(item: ReviewItem) {
     const tier = item.intelligence_sources?.trust_tier ?? item.raw_metadata?.trust_tier ?? 3;
-    const sourcePoints = tier === 1 ? 35 : tier === 2 ? 23 : 10;
+    const sourcePoints = tier === 1 ? 35 : tier === 2 ? 27 : 12;
     const published = item.source_published_at ? new Date(item.source_published_at).getTime() : 0;
     const ageHours = published ? Math.max(0, (Date.now() - published) / 3_600_000) : 24 * 30;
-    const recencyPoints = published ? Math.max(0, 30 - Math.min(30, ageHours / 24)) : 0;
-    const detailPoints = item.description?.trim().length > 240 ? 20 : item.description?.trim().length > 60 ? 12 : 4;
-    const categoryPoints = item.category_candidates?.length ? 10 : 0;
+    const recencyPoints = published ? (ageHours <= 1 ? 25 : ageHours <= 72 ? 18 : ageHours <= 168 ? 10 : 0) : 0;
+    const detailPoints = item.description?.trim().length >= 500 ? 20 : item.description?.trim().length >= 200 ? 16 : item.description?.trim().length >= 120 ? 10 : 0;
+    const categoryPoints = item.category_candidates?.length ? 20 : 0;
     return Math.min(100, Math.round(sourcePoints + recencyPoints + detailPoints + categoryPoints));
   }
 
@@ -242,7 +242,7 @@ export default function ReviewPage() {
           <div>
             <Link href="/" className="mb-2 inline-flex items-center gap-2 text-xs text-slate-500 hover:text-white"><ArrowLeft size={14}/> OSA dashboard</Link>
             <h1 className="text-xl font-semibold md:text-2xl">Intelligence Review Centre</h1>
-            <p className="mt-1 text-xs text-slate-500">Private collection inbox · Nothing is published automatically</p>
+            <p className="mt-1 text-xs text-slate-500">Private collection inbox · Qualifying stories publish automatically above 72/100</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => void loadItems()} disabled={loading} className="flex h-10 items-center gap-2 rounded-xl border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-50"><RefreshCw size={14} className={loading ? "animate-spin" : ""}/> Refresh</button>
@@ -293,7 +293,7 @@ export default function ReviewPage() {
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px]">
                       <span className="rounded-full bg-white/5 px-2.5 py-1 text-slate-300">{item.review_status.toUpperCase()}</span>
-                      <span className="rounded-full border border-[#c7f36b]/20 px-2.5 py-1 text-[#d8f5a0]">Triage {triageScore(item)}/100</span>
+                      <span className="rounded-full border border-[#c7f36b]/20 px-2.5 py-1 text-[#d8f5a0]">Estimated auto score {triageScore(item)}/100</span>
                       {duplicateIds.has(item.id) && <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-amber-200">Possible duplicate</span>}
                       {(item.category_candidates || []).map((category) => <span key={category} className="rounded-full bg-[#c7f36b]/10 px-2.5 py-1 text-[#d8f5a0]">{category}</span>)}
                       {(item.region_candidates || []).slice(0, 2).map((region) => <span key={region} className="rounded-full bg-white/5 px-2.5 py-1 text-slate-500">{region}</span>)}
@@ -309,18 +309,18 @@ export default function ReviewPage() {
                     </div>
                     <a href={item.canonical_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-[#c7f36b] hover:underline">Open original source <ExternalLink size={13}/></a>
                   </div>
-                  <div className="flex shrink-0 flex-wrap gap-2 lg:w-36 lg:flex-col">
+                  {item.review_status !== "published" && <div className="flex shrink-0 flex-wrap gap-2 lg:w-36 lg:flex-col">
                     <button disabled={busyId === item.id || item.review_status === "reviewing"} onClick={() => void updateStatus(item, "reviewing")} className="flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-40">Reviewing</button>
                     <button disabled={busyId === item.id || item.review_status === "approved"} onClick={() => void updateStatus(item, "approved")} className="flex h-9 items-center justify-center gap-2 rounded-lg bg-[#c7f36b] px-3 text-xs font-semibold text-[#10150a] hover:bg-[#d7ff7d] disabled:opacity-40"><Check size={13}/> Approve</button>
                     <button disabled={busyId === item.id || item.review_status === "rejected"} onClick={() => void updateStatus(item, "rejected")} className="flex h-9 items-center justify-center gap-2 rounded-lg border border-red-400/20 px-3 text-xs text-red-300 hover:bg-red-400/5 disabled:opacity-40"><X size={13}/> Reject</button>
                     {item.review_status === "approved" && <button onClick={() => { setEditorItem(item); setDraftTitle(item.title); setDraftCategory(item.category_candidates[0] || "Markets"); setDraftSummary(""); setDraftWhy(""); setDraftAudience(""); setDraftSignal("worth_watching"); }} className="flex h-9 items-center justify-center rounded-lg border border-[#c7f36b]/30 px-3 text-xs font-semibold text-[#d8f5a0] hover:bg-[#c7f36b]/5">Create OSA brief</button>}
-                  </div>
+                  </div>}
                 </div>
               </article>
             ))}
           </div>
         )}
-        <p className="mt-8 text-center text-[11px] leading-5 text-slate-600">Triage score is a rule-based sorting aid using source tier, freshness and description completeness — not a measure of truth or real-world impact. Similar headlines are flagged as possible duplicates for human checking. Showing up to 200 records per view. Approved does not publish the item.</p>
+        <p className="mt-8 text-center text-[11px] leading-5 text-slate-600">Estimated score uses source tier, freshness, description completeness and category match. Automatic publication additionally requires an eligible source tier, a recent publication date, sufficient detail, an HTTPS source link and no uncertainty indicators. A score is a sorting aid, not proof of truth or impact. Similar headlines are flagged as possible duplicates. Showing up to 200 records per view.</p>
       </div>
     </main>
   );
