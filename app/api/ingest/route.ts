@@ -104,7 +104,13 @@ export async function POST(request: NextRequest) {
     { headers: restHeaders, cache: "no-store" },
   );
   if (!sourcesResponse.ok) {
-    return NextResponse.json({ error: "Could not load the source registry. Apply the intelligence-ingestion.sql migration first." }, { status: 500 });
+    const supabaseError = await sourcesResponse.text();
+    return NextResponse.json({
+      error: "Supabase rejected the source registry request.",
+      status: sourcesResponse.status,
+      details: supabaseError.slice(0, 1200),
+      hint: "Check the intelligence_sources table, service-role key, and Supabase API schema cache.",
+    }, { status: 500 });
   }
 
   const sources = await sourcesResponse.json() as Array<Source & { last_fetched_at: string | null; fetch_interval_minutes: number }>;
