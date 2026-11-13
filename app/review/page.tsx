@@ -144,6 +144,42 @@ export default function ReviewPage() {
     setNotice("You have signed out.");
   }
 
+  function normalizedTitle(value: string) {
+    return value.toLowerCase().replace(/&amp;/g, "and").replace(/[^a-z0-9 ]/g, " ").replace(/\\b(the|a|an|to|of|in|on|for|with|and)\\b/g, " ").replace(/\\s+/g, " ").trim();
+  }
+
+  function similarity(left: string, right: string) {
+    const a = new Set(normalizedTitle(left).split(" ").filter((word) => word.length > 2));
+    const b = new Set(normalizedTitle(right).split(" ").filter((word) => word.length > 2));
+    if (!a.size || !b.size) return 0;
+    const intersection = [...a].filter((word) => b.has(word)).length;
+    return intersection / (a.size + b.size - intersection);
+  }
+
+  function triageScore(item: ReviewItem) {
+    const tier = item.intelligence_sources?.trust_tier ?? item.raw_metadata?.trust_tier ?? 3;
+    const sourcePoints = tier === 1 ? 35 : tier === 2 ? 23 : 10;
+    const published = item.source_published_at ? new Date(item.source_published_at).getTime() : 0;
+    const ageHours = published ? Math.max(0, (Date.now() - published) / 3_600_000) : 24 * 30;
+    const recencyPoints = published ? Math.max(0, 30 - Math.min(30, ageHours / 24)) : 0;
+    const detailPoints = item.description?.trim().length > 240 ? 20 : item.description?.trim().length > 60 ? 12 : 4;
+    const categoryPoints = item.category_candidates?.length ? 10 : 0;
+    return Math.min(100, Math.round(sourcePoints + recencyPoints + detailPoints + categoryPoints));
+  }
+
+  const duplicateIds = useMemo(() => {
+    const duplicates = new Set<string>();
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        if (similarity(items[i].title, items[j].title) >= 0.72) {
+          duplicates.add(items[i].id);
+          duplicates.add(items[j].id);
+        }
+      }
+    }
+    return duplicates;
+  }, [items]);
+
   const counts = useMemo(() => ({
     all: items.length,
     fresh: items.filter((item) => item.review_status === "new").length,
@@ -221,6 +257,8 @@ export default function ReviewPage() {
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px]">
                       <span className="rounded-full bg-white/5 px-2.5 py-1 text-slate-300">{item.review_status.toUpperCase()}</span>
+                      <span className="rounded-full border border-[#c7f36b]/20 px-2.5 py-1 text-[#d8f5a0]">Triage {triageScore(item)}/100</span>
+                      {duplicateIds.has(item.id) && <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-amber-200">Possible duplicate</span>}
                       {(item.category_candidates || []).map((category) => <span key={category} className="rounded-full bg-[#c7f36b]/10 px-2.5 py-1 text-[#d8f5a0]">{category}</span>)}
                       {(item.region_candidates || []).slice(0, 2).map((region) => <span key={region} className="rounded-full bg-white/5 px-2.5 py-1 text-slate-500">{region}</span>)}
                     </div>
@@ -245,7 +283,7 @@ export default function ReviewPage() {
             ))}
           </div>
         )}
-        <p className="mt-8 text-center text-[11px] leading-5 text-slate-600">Showing up to 200 records per view. Approved means editorially accepted for the next publishing step; it does not publish the item.</p>
+        <p className="mt-8 text-center text-[11px] leading-5 text-slate-600">Triage score is a rule-based sorting aid using source tier, freshness and description completeness — not a measure of truth or real-world impact. Similar headlines are flagged as possible duplicates for human checking. Showing up to 200 records per view. Approved does not publish the item.</p>
       </div>
     </main>
   );
