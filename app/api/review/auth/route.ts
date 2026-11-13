@@ -4,7 +4,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const runtime = "nodejs";
 
 const COOKIE_NAME = "osa_review_access";
-function cookieValue(secret: string) {\n  return createHmac("sha256", secret).update("osa-review-session-v1").digest("hex");\n}
+
+function cookieValue(secret: string) {
+  return createHmac("sha256", secret).update("osa-review-session-v1").digest("hex");
+}
 
 function passwordMatches(input: string, expected: string) {
   const left = Buffer.from(input);
@@ -30,7 +33,7 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(COOKIE_NAME, COOKIE_VALUE, {
+  response.cookies.set(COOKIE_NAME, cookieValue(reviewSecret), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
