@@ -21,8 +21,6 @@ type FeedItem = {
   publishedAt: string | null;
 };
 
-const CATEGORY_NAMES = ["Markets", "Startups", "Technology", "Career", "Learning"];
-
 function decodeXml(value: string) {
   return value
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
