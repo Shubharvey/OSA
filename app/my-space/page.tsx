@@ -48,7 +48,8 @@ export default function MySpacePage() {
   const [deleting, setDeleting] = useState(false);
   const [interestSignals, setInterestSignals] = useState<InterestSignal[]>([]);
   const [newInterest, setNewInterest] = useState("");
-  const [savingInterest, setSavingInterest] = useState(false);\n  const [analysingEntryId, setAnalysingEntryId] = useState<string | null>(null);
+  const [savingInterest, setSavingInterest] = useState(false);
+  const [analysingEntryId, setAnalysingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) {
@@ -247,7 +248,7 @@ export default function MySpacePage() {
                 <textarea required minLength={1} maxLength={20000} rows={9} value={body} onChange={(event) => setBody(event.target.value)} placeholder="What's on your mind? Write about an idea, a plan, something you experienced, or a skill you want to build…" className="w-full resize-y rounded-xl border border-white/10 bg-[#090b10] p-4 text-sm leading-6 outline-none placeholder:text-slate-600 focus:border-[#c7f36b]/40"/>
                 <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-black/10 p-4">
                   <input type="checkbox" checked={analysisConsent} onChange={(event) => setAnalysisConsent(event.target.checked)} className="mt-1 accent-[#c7f36b]"/>
-                  <span><span className="block text-sm font-medium text-slate-200">Allow OSA to analyse this entry</span><span className="mt-1 block text-xs leading-5 text-slate-500">Optional. If enabled, OSA may use this entry to identify interests and improve your recommendations when the analysis feature is introduced. This does not publish your entry.</span></span>
+                  <span><span className="block text-sm font-medium text-slate-200">Allow OSA to analyse this entry</span><span className="mt-1 block text-xs leading-5 text-slate-500">Optional. If enabled, you can ask OSA to send this entry to its AI service to suggest non-sensitive interests. Suggestions stay private and require your approval before use. This does not publish your entry.</span></span>
                 </label>
                 <button disabled={saving || !body.trim()} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c7f36b] text-sm font-semibold text-[#10150a] disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving…" : "Save private entry"} <Send size={15}/></button>
               </form>
