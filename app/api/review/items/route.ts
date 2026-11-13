@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const runtime = "nodejs";
 
 const COOKIE_NAME = "osa_review_access";
-const ALLOWED_STATUSES = ["new", "reviewing", "approved", "rejected"] as const;
+const ALLOWED_STATUSES = ["new", "reviewing", "approved", "rejected", "published"] as const;
 
 function cookieValue(secret: string) {
   return createHmac("sha256", secret).update("osa-review-session-v1").digest("hex");
