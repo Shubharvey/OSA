@@ -1,13 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";\nimport { createHmac, timingSafeEqual } from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const runtime = "nodejs";
 
 const COOKIE_NAME = "osa_review_access";
-function cookieValue(secret: string) {\n  return createHmac("sha256", secret).update("osa-review-session-v1").digest("hex");\n}
 const ALLOWED_STATUSES = ["new", "reviewing", "approved", "rejected"] as const;
 
+function cookieValue(secret: string) {
+  return createHmac("sha256", secret).update("osa-review-session-v1").digest("hex");
+}
+
 function isAuthorized(request: NextRequest) {
-  return request.cookies.get(COOKIE_NAME)?.value === COOKIE_VALUE && Boolean(process.env.OSA_REVIEW_SECRET);
+  const secret = process.env.OSA_REVIEW_SECRET;
+  const supplied = request.cookies.get(COOKIE_NAME)?.value || "";
+  if (!secret || !supplied) return false;
+  const expected = cookieValue(secret);
+  const left = Buffer.from(supplied);
+  const right = Buffer.from(expected);
+  return left.length === right.length && timingSafeEqual(left, right);
 }
 
 function config() {
