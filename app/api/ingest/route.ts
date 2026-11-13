@@ -38,14 +38,14 @@ function decodeXml(value: string) {
 function tagValue(xml: string, tag: string): string {
   const escaped = tag.replace(/[.*+?^{}()|[\]\\]/g, "\\$&");
   const match = xml.match(new RegExp("<(?:[\\w.-]+:)?" + escaped + "(?:\\s[^>]*)?>([\\s\\S]*?)</(?:[\\w.-]+:)?" + escaped + "\\s*>", "i"));
-  return match ? decodeXml(match[1]).replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim() : "";
+  return match ? decodeXml(match[1]).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
 }
 
 function parseFeed(xml: string): FeedItem[] {
-  const blocks = [...xml.matchAll(/<(item|entry)(?:\\s[^>]*)?>([\\s\\S]*?)<\\/\\1>/gi)];
+  const blocks = [...xml.matchAll(/<(item|entry)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi)];
   return blocks.map((match) => {
     const block = match[2];
-    const linkTag = block.match(/<link\\b([^>]*)>([\\s\\S]*?)<\\/link>/i);
+    const linkTag = block.match(/<link\b([^>]*)>([\s\S]*?)<\/link>/i);
     const linkAttr = block.match(/<link\\b[^>]*href=["']([^"']+)["'][^>]*\\/?\s*>/i);
     const link = (linkAttr?.[1] || (linkTag ? decodeXml(linkTag[2]).trim() : "")).trim();
     const published = tagValue(block, "pubDate") || tagValue(block, "published") || tagValue(block, "updated") || tagValue(block, "date");
@@ -132,8 +132,8 @@ export async function POST(request: NextRequest) {
       for (const item of items) {
         const canonicalUrl = canonicalize(item.link);
         if (!canonicalUrl) continue;
-        const title = item.title.replace(/\\s+/g, " ").slice(0, 500);
-        const description = item.description.replace(/\\s+/g, " ").slice(0, 5000);
+        const title = item.title.replace(/\s+/g, " ").slice(0, 500);
+        const description = item.description.replace(/\s+/g, " ").slice(0, 5000);
         const contentHash = await sha256(`${title.toLowerCase()}|${description.toLowerCase()}`);
         const payload = {
           source_id: source.id,
