@@ -46,7 +46,7 @@ function parseFeed(xml: string): FeedItem[] {
   return blocks.map((match) => {
     const block = match[2];
     const linkTag = block.match(/<link\b([^>]*)>([\s\S]*?)<\/link>/i);
-    const linkAttr = block.match(/<link\\b[^>]*href=["']([^"']+)["'][^>]*\\/?\s*>/i);
+    const linkAttr = block.match(/<link\b[^>]*href=["']([^"']+)["'][^>]*\/?\s*>/i);
     const link = (linkAttr?.[1] || (linkTag ? decodeXml(linkTag[2]).trim() : "")).trim();
     const published = tagValue(block, "pubDate") || tagValue(block, "published") || tagValue(block, "updated") || tagValue(block, "date");
     const parsedDate = published && !Number.isNaN(Date.parse(published)) ? new Date(published).toISOString() : null;
