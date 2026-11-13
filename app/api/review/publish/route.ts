@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
     reading_time_minutes: Math.max(1, Math.ceil(summary.split(/\\s+/).length / 200)),
     signal_level: body.signal_level, is_featured: false, status,
   };
-  const insert = await fetch(`${db.url}/rest/v1/feed_entries`, {
-    method: "POST", headers: { ...db.headers, Prefer: "return=representation" }, body: JSON.stringify(payload),
+  const insert = await fetch(`${db.url}/rest/v1/feed_entries?on_conflict=slug`, {
+    method: "POST", headers: { ...db.headers, Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify(payload),
   });
   if (!insert.ok) {
     const details = await insert.text();
