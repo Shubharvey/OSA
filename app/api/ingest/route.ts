@@ -61,6 +61,31 @@ function parseFeed(xml: string): FeedItem[] {
   }).filter((item) => item.title && item.link);
 }
 
+
+function classifyCategories(title: string, description: string, source: Source): string[] {
+  const text = ` ${title} ${description} `.toLowerCase();
+  const has = (pattern: RegExp) => pattern.test(text);
+  const categories: string[] = [];
+
+  // A source may suggest the eligible topics, but never assigns them automatically.
+  const eligible = new Set(source.categories || []);
+
+  const markets = has(/\\b(stock market|equity|equities|bond market|bonds|fixed income|forex|foreign exchange|currency|currencies|central bank|interest rate|monetary policy|inflation|cpi|gdp|economic growth|recession|ipo|listing|securities|exchange traded|etf|fund flows|asset management|banking|bank|financial services|credit|debt|yield|treasury|commodit|oil price|gold price|regulat(?:ion|ory|or)|sebi|federal reserve|ecb|fomc|rate cut|rate hike|capital markets)\\b/);
+  const startups = has(/\\b(startup|start-ups|venture capital|vc funding|funding round|series [a-f]|seed round|unicorn|acquisition|merger|m&a|ipo|founder|valuation|private equity|accelerator|incubator)\\b/);
+  const technology = has(/\\b(artificial intelligence|\\bai\\b|machine learning|generative ai|llm|semiconductor|chipmaker|chip|software|cybersecurity|cloud computing|robotics|quantum computing|data centre|data center|technology|tech company|open source|model release|autonomous vehicle|electric vehicle|battery technology|space technology|satellite|biotechnology)\\b/);
+  const career = has(/\\b(hiring|job market|jobs report|employment|unemployment|workforce|layoff|layoffs|recruitment|salary|wages|skills gap|careers|workplace|labour market|labor market|internship|professional development)\\b/);
+  const learning = has(/\\b(course|courses|certification|certificate|curriculum|university|education|research paper|study finds|academic|scholarship|training programme|training program|learning resource|open access|nptel|mooc)\\b/);
+
+  if (eligible.has("Markets") && markets) categories.push("Markets");
+  if (eligible.has("Startups") && startups) categories.push("Startups");
+  if (eligible.has("Technology") && technology) categories.push("Technology");
+  if (eligible.has("Career") && career) categories.push("Career");
+  if (eligible.has("Learning") && learning) categories.push("Learning");
+
+  // Only tightly relevant articles enter the OSA review queue.
+  return categories;
+}
+
 function canonicalize(rawUrl: string): string | null {
   try {
     const url = new URL(rawUrl);
@@ -138,6 +163,8 @@ export async function POST(request: NextRequest) {
       for (const item of items) {
         const canonicalUrl = canonicalize(item.link);
         if (!canonicalUrl) continue;
+        const categories = classifyCategories(item.title, item.description, source);
+        if (categories.length === 0) continue;
         const title = item.title.replace(/\s+/g, " ").slice(0, 500);
         const description = item.description.replace(/\s+/g, " ").slice(0, 5000);
         const contentHash = await sha256(`${title.toLowerCase()}|${description.toLowerCase()}`);
@@ -148,7 +175,7 @@ export async function POST(request: NextRequest) {
           title,
           description,
           author: item.author.slice(0, 300),
-          category_candidates: source.categories.filter((category) => CATEGORY_NAMES.includes(category)),
+          category_candidates: categories,
           region_candidates: source.regions,
           source_published_at: item.publishedAt,
           content_hash: contentHash,
