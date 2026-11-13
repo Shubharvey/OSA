@@ -22,20 +22,22 @@ jobs:
             exit 1
           fi
 
-          response=$(curl --silent --show-error \
+          response_file="$(mktemp)"
+          status=$(curl --silent --show-error \
             --max-time 70 \
-            --write-out "\\n%{http_code}" \
+            --output "$response_file" \
+            --write-out "%{http_code}" \
             -X POST "$OSA_INGEST_URL" \
             -H "Authorization: Bearer $INGEST_SECRET" \
             -H "Content-Type: application/json")
 
-          status="${response##*$'\\n'}"
-          body="${response%$'\\n'*}"
-
           echo "Collector response:"
-          echo "$body"
+          cat "$response_file"
+          echo
           echo "HTTP status: $status"
 
-          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+          if ! [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+            rm -f "$response_file"
             exit 1
           fi
+          rm -f "$response_file"
