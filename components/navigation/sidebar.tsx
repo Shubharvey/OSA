@@ -16,7 +16,7 @@ const links: { label: Category; icon: typeof LayoutDashboard }[] = [
 export function Sidebar({ active, onSelect }: { active: Category; onSelect: (category: Category) => void }) {
   return (
     <>
-      <nav aria-label="Mobile navigation" className="flex w-full items-center gap-2 overflow-x-auto border-b border-white/10 bg-[#0c0f15] px-4 py-3 lg:hidden">
+      <nav aria-label="Mobile navigation" className="hidden">
         {links.map(({ label, icon: Icon }) => (
           <button key={label} onClick={() => onSelect(label)} aria-current={active === label ? "page" : undefined} className={"flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs transition " + (active === label ? "border-[#c7f36b] bg-[#c7f36b] font-semibold text-[#10150a]" : "border-white/10 text-slate-400")}>
             <Icon size={14}/>{label === "All" ? "For you" : label}
