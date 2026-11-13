@@ -237,22 +237,22 @@ export default function ReviewPage() {
 
   return (
     <main className="min-h-screen bg-[#090b10] text-white">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-[#090b10]/95 px-5 py-4 backdrop-blur-xl md:px-9">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-[#090b10]/95 px-4 py-4 backdrop-blur-xl sm:px-5 md:px-9">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link href="/" className="mb-2 inline-flex items-center gap-2 text-xs text-slate-500 hover:text-white"><ArrowLeft size={14}/> OSA dashboard</Link>
             <h1 className="text-xl font-semibold md:text-2xl">Intelligence Review Centre</h1>
             <p className="mt-1 text-xs text-slate-500">Private collection inbox · Qualifying stories publish automatically above 72/100</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <button onClick={() => void loadItems()} disabled={loading} className="flex h-10 items-center gap-2 rounded-xl border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-50"><RefreshCw size={14} className={loading ? "animate-spin" : ""}/> Refresh</button>
             <button onClick={signOut} className="flex h-10 items-center gap-2 rounded-xl border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5"><LogOut size={14}/> Sign out</button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-5 py-7 md:px-9">
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-5 md:px-9 md:py-7">
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[{ label: "Loaded items", value: counts.all }, { label: "New", value: counts.fresh }, { label: "Reviewing", value: counts.reviewing }, { label: "Approved", value: counts.approved }].map((stat) => (
             <div key={stat.label} className="rounded-2xl border border-white/10 bg-[#11151d] p-4"><p className="text-xs text-slate-500">{stat.label}</p><p className="mt-2 text-2xl font-semibold tabular-nums">{stat.value}</p></div>
           ))}
@@ -260,9 +260,9 @@ export default function ReviewPage() {
 
         <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold"><Filter size={15} className="text-[#c7f36b]"/> Review inbox</div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search titles…" className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-9 pr-3 text-xs outline-none sm:w-56"/></div>
-            <select value={category} onChange={(event) => setCategory(event.target.value)} className="h-10 rounded-xl border border-white/10 bg-[#11151d] px-3 text-xs text-slate-300 outline-none"><option value="all">All categories</option>{["Markets","Startups","Technology","Career","Learning"].map((value) => <option key={value} value={value}>{value}</option>)}</select>
+          <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto">
+            <div className="relative min-w-0"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search titles…" className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-9 pr-3 text-xs outline-none lg:w-56"/></div>
+            <select value={category} onChange={(event) => setCategory(event.target.value)} className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-[#11151d] px-3 text-xs text-slate-300 outline-none"><option value="all">All categories</option>{["Markets","Startups","Technology","Career","Learning"].map((value) => <option key={value} value={value}>{value}</option>)}</select>
             <select value={sourceId} onChange={(event) => setSourceId(event.target.value)} className="h-10 rounded-xl border border-white/10 bg-[#11151d] px-3 text-xs text-slate-300 outline-none"><option value="all">All sources</option>{sources.map((source) => <option key={source.id} value={source.id}>{source.name}</option>)}</select>
             <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)} className="h-10 rounded-xl border border-white/10 bg-[#11151d] px-3 text-xs text-slate-300 outline-none">{statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
           </div>
