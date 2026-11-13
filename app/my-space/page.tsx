@@ -45,7 +45,10 @@ export default function MySpacePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [entryPendingDelete, setEntryPendingDelete] = useState<Entry | null>(null);
-  const [deleting, setDeleting] = useState(false);\n  const [interestSignals, setInterestSignals] = useState<InterestSignal[]>([]);\n  const [newInterest, setNewInterest] = useState("");\n  const [savingInterest, setSavingInterest] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [interestSignals, setInterestSignals] = useState<InterestSignal[]>([]);
+  const [newInterest, setNewInterest] = useState("");
+  const [savingInterest, setSavingInterest] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
