@@ -85,8 +85,9 @@ export default function HomePage() {
     return matchesCategory && haystack.includes(query.toLowerCase());
   }), [active, query, items, hiddenCategories]);
   function rateStory(item: IntelligenceItem, rating: "like" | "dislike") {
-    const next = { ...storyFeedback, [item.id]: storyFeedback[item.id] === rating ? undefined : rating };
-    if (next[item.id] === undefined) delete next[item.id];
+    const next: Record<string, "like" | "dislike"> = { ...storyFeedback };
+    if (next[item.id] === rating) delete next[item.id];
+    else next[item.id] = rating;
     setStoryFeedback(next);
     try { localStorage.setItem("osa-story-feedback-v1", JSON.stringify(next)); } catch { /* Local preference storage may be unavailable. */ }
     setFeedbackMessage(rating === "like" ? "Thanks. We'll use this signal to improve your feed." : "Thanks. We'll show you fewer stories like this.");
