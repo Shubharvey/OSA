@@ -112,7 +112,7 @@ function assessForAutoPublish(item: FeedItem, source: Source, categories: string
   return { score, eligible: score > 72 && trusted && fresh && enoughDetail && hasCategory && secureLink && !uncertain, reasons };
 }
 
-function buildAutomaticBrief(item: FeedItem, source: Source, category: string, score: number) {
+function buildAutomaticBrief(item: FeedItem, source: Source, category: string, score: number, rawItemId: string) {
   const description = item.description.trim().replace(/\s+/g, " ").slice(0, 1800);
   const audiences: Record<string, string> = {
     Markets: "Investors, financial-market professionals, analysts and businesses exposed to market movements.",
@@ -131,7 +131,7 @@ function buildAutomaticBrief(item: FeedItem, source: Source, category: string, s
   const analysis = /\b(forecast|outlook|expects?|predicts?|analysis|opinion|could|may|might|likely|potential)\b/i.test(`${item.title} ${description}`);
   const summary = `${description}\n\nWhy it matters\n${why[category]}\n\nWho should care\n${audiences[category]}\n\nEditorial note\nAutomatically prepared from the source description (automated quality score: ${score}/100). This is a source-based brief, not independent verification or investment advice.`;
   const title = item.title.trim().slice(0, 180);
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 90) + "-" + source.id.slice(0, 8);
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 90) + "-" + rawItemId.slice(0, 8);
   return { slug, category, eyebrow: analysis ? `${category.toUpperCase()} · ANALYSIS` : category.toUpperCase(), title, summary, source_name: source.name, source_url: item.link, published_at: item.publishedAt || new Date().toISOString(), reading_time_minutes: Math.max(1, Math.ceil(summary.split(/\s+/).length / 200)), signal_level: analysis ? "explainer" : score >= 88 ? "high_signal" : "worth_watching", is_featured: false, status: "published" };
 }
 
@@ -242,26 +242,57 @@ export async function POST(request: NextRequest) {
         const savedRows = await saveResponse.json() as Array<{ id: string }>;
         if (savedRows.length > 0) {
           sourceInserted += savedRows.length;
-          const decision = assessForAutoPublish(item, source, categories);
-          if (decision.eligible) {
-            const brief = buildAutomaticBrief(item, source, categories[0], decision.score);
-            const publishResponse = await fetch(`${supabaseUrl}/rest/v1/feed_entries?on_conflict=slug`, {
-              method: "POST",
-              headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates,return=minimal" },
-              body: JSON.stringify(brief),
-            });
-            if (!publishResponse.ok) throw new Error("The item was collected, but automatic publishing failed.");
-            const statusResponse = await fetch(`${supabaseUrl}/rest/v1/raw_intelligence_items?id=eq.${savedRows[0].id}`, {
-              method: "PATCH",
-              headers: { ...restHeaders, Prefer: "return=minimal" },
-              body: JSON.stringify({ review_status: "published", updated_at: new Date().toISOString() }),
-            });
-            if (!statusResponse.ok) throw new Error("The item was published, but its inbox status could not be updated.");
-            autoPublished += 1;
-          } else {
-            heldForReview += 1;
-          }
         }
+      }
+
+      // Re-evaluate pending inbox items, including stories collected before auto-publishing was added.
+      const pendingResponse = await fetch(
+        `${supabaseUrl}/rest/v1/raw_intelligence_items?source_id=eq.${source.id}&review_status=eq.new&select=id,title,canonical_url,description,source_published_at,category_candidates&order=source_published_at.desc.nullslast&limit=100`,
+        { headers: restHeaders, cache: "no-store" },
+      );
+      if (!pendingResponse.ok) throw new Error("Could not load pending inbox items for automatic publishing.");
+      const pendingItems = await pendingResponse.json() as Array<{
+        id: string;
+        title: string;
+        canonical_url: string;
+        description: string | null;
+        source_published_at: string | null;
+        category_candidates: string[] | null;
+      }>;
+
+      for (const pending of pendingItems) {
+        const item: FeedItem = {
+          title: pending.title,
+          link: pending.canonical_url,
+          description: pending.description || "",
+          id: pending.id,
+          author: "",
+          publishedAt: pending.source_published_at,
+        };
+        const categories = (pending.category_candidates || []).filter((category) =>
+          ["Markets", "Startups", "Technology", "Career", "Learning"].includes(category)
+        );
+        const decision = assessForAutoPublish(item, source, categories);
+        if (!decision.eligible) {
+          heldForReview += 1;
+          continue;
+        }
+
+        const brief = buildAutomaticBrief(item, source, categories[0], decision.score, pending.id);
+        const publishResponse = await fetch(`${supabaseUrl}/rest/v1/feed_entries?on_conflict=slug`, {
+          method: "POST",
+          headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates,return=minimal" },
+          body: JSON.stringify(brief),
+        });
+        if (!publishResponse.ok) throw new Error("A pending item qualified, but automatic publishing failed.");
+
+        const statusResponse = await fetch(`${supabaseUrl}/rest/v1/raw_intelligence_items?id=eq.${pending.id}&review_status=eq.new`, {
+          method: "PATCH",
+          headers: { ...restHeaders, Prefer: "return=minimal" },
+          body: JSON.stringify({ review_status: "published", updated_at: new Date().toISOString() }),
+        });
+        if (!statusResponse.ok) throw new Error("An item was published, but its inbox status could not be updated.");
+        autoPublished += 1;
       }
 
       const updateResponse = await fetch(`${supabaseUrl}/rest/v1/intelligence_sources?id=eq.${source.id}`, {
@@ -294,6 +325,6 @@ export async function POST(request: NextRequest) {
     failures,
     auto_published: autoPublished,
     held_for_review: heldForReview,
-    publishing_policy: "Automatically publish only new items scoring above 72/100 that also pass source trust, freshness, detail, category, HTTPS-link and uncertainty safeguards. Other items remain private for review.",
+    publishing_policy: "Automatically publish pending and newly collected items scoring above 72/100 that also pass source trust, freshness, detail, category, HTTPS-link and uncertainty safeguards. Other items remain private for review.",
   });
 }
