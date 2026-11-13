@@ -10,12 +10,28 @@
 }
 
 * { box-sizing: border-box; }
-html { min-height: 100%; background: var(--background); }
+html { min-height: 100%; background: var(--background); scroll-behavior: smooth; }
 body {
   margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
   background: var(--background);
   color: #f4f6fa;
   font-family: Arial, Helvetica, sans-serif;
 }
+img, video, canvas, svg { max-width: 100%; }
+input, textarea, select, button { font: inherit; }
+input, textarea, select { max-width: 100%; }
 button, a { -webkit-tap-highlight-color: transparent; }
+button, a, input, textarea, select { touch-action: manipulation; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 ::selection { background: rgba(199, 243, 107, .25); color: #fff; }
+
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px; }
+  main { min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
