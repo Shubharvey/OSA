@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, ExternalLink, Filter, LockKeyhole, LogOut, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
 
-type ReviewStatus = "new" | "reviewing" | "approved" | "rejected";
+type ReviewStatus = "new" | "reviewing" | "approved" | "rejected" | "published";
 type ReviewItem = {
   id: string;
   source_id: string;
@@ -27,6 +27,7 @@ const statusOptions: { value: "all" | ReviewStatus; label: string }[] = [
   { value: "reviewing", label: "Reviewing" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
+  { value: "published", label: "Published" },
 ];
 
 function formatDate(value: string | null) {
@@ -48,6 +49,13 @@ export default function ReviewPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [editorItem, setEditorItem] = useState<ReviewItem | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftCategory, setDraftCategory] = useState("Markets");
+  const [draftSummary, setDraftSummary] = useState("");
+  const [draftWhy, setDraftWhy] = useState("");
+  const [draftAudience, setDraftAudience] = useState("");
+  const [draftSignal, setDraftSignal] = useState("worth_watching");
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -135,6 +143,20 @@ export default function ReviewPage() {
     } finally {
       setBusyId(null);
     }
+  }
+
+  async function saveBrief(action: "draft" | "publish") {
+    if (!editorItem) return;
+    setBusyId(editorItem.id); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/review/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ item_id: editorItem.id, category: draftCategory, title: draftTitle, summary: draftSummary, why_it_matters: draftWhy, who_should_care: draftAudience, signal_level: draftSignal, action }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not save this brief.");
+      if (action === "publish") setItems((current) => current.map((entry) => entry.id === editorItem.id ? { ...entry, review_status: "published" } : entry));
+      setNotice(action === "publish" ? "OSA brief published to the public feed." : "OSA brief saved as a draft. It is not public.");
+      setEditorItem(null);
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not save this brief."); }
+    finally { setBusyId(null); }
   }
 
   async function signOut() {
@@ -246,6 +268,20 @@ export default function ReviewPage() {
           </div>
         </div>
 
+        {editorItem && <section className="mb-6 rounded-2xl border border-[#c7f36b]/30 bg-[#111a17] p-5 md:p-7">
+          <div className="mb-4 flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold tracking-[0.2em] text-[#c7f36b]">EDITORIAL WORKSPACE</p><h2 className="mt-1 text-lg font-semibold">Create an OSA intelligence brief</h2><p className="mt-1 text-xs text-slate-400">Source: {editorItem.intelligence_sources?.name || "Unknown"} · Original article remains linked.</p></div><button onClick={() => setEditorItem(null)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Close</button></div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="text-xs text-slate-400 md:col-span-2">Headline<input value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} maxLength={180} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-black/20 px-3 text-sm text-white"/></label>
+            <label className="text-xs text-slate-400">Category<select value={draftCategory} onChange={(e) => setDraftCategory(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-[#11151d] px-3 text-sm text-white">{["Markets","Startups","Technology","Career","Learning"].map((x) => <option key={x}>{x}</option>)}</select></label>
+            <label className="text-xs text-slate-400">Signal level<select value={draftSignal} onChange={(e) => setDraftSignal(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-[#11151d] px-3 text-sm text-white"><option value="high_signal">High signal</option><option value="worth_watching">Worth watching</option><option value="explainer">Explainer</option></select></label>
+            <label className="text-xs text-slate-400 md:col-span-2">Plain-English summary<textarea value={draftSummary} onChange={(e) => setDraftSummary(e.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-white" placeholder="What happened? Include the important facts."/></label>
+            <label className="text-xs text-slate-400 md:col-span-2">Why it matters<textarea value={draftWhy} onChange={(e) => setDraftWhy(e.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-white" placeholder="Explain the implications and what may change."/></label>
+            <label className="text-xs text-slate-400 md:col-span-2">Who should care<textarea value={draftAudience} onChange={(e) => setDraftAudience(e.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-white" placeholder="Who should pay attention, and why?"/></label>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2"><button disabled={busyId===editorItem.id} onClick={() => void saveBrief("draft")} className="rounded-lg border border-white/15 px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-40">Save draft</button><button disabled={busyId===editorItem.id} onClick={() => { if (window.confirm("Publish this brief to the public OSA feed?")) void saveBrief("publish"); }} className="rounded-lg bg-[#c7f36b] px-4 py-2.5 text-xs font-bold text-[#10150a] disabled:opacity-40">Publish to OSA</button></div>
+          <p className="mt-3 text-[11px] text-slate-500">Saving a draft keeps it private. Publishing makes it visible on the public OSA dashboard.</p>
+        </section>}
+
         {error && <div role="alert" className="mb-4 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs text-red-200">{error}</div>}
         {notice && <div className="mb-4 rounded-xl border border-[#c7f36b]/20 bg-[#c7f36b]/5 p-3 text-xs text-[#d8f5a0]">{notice}</div>}
 
@@ -277,6 +313,7 @@ export default function ReviewPage() {
                     <button disabled={busyId === item.id || item.review_status === "reviewing"} onClick={() => void updateStatus(item, "reviewing")} className="flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-40">Reviewing</button>
                     <button disabled={busyId === item.id || item.review_status === "approved"} onClick={() => void updateStatus(item, "approved")} className="flex h-9 items-center justify-center gap-2 rounded-lg bg-[#c7f36b] px-3 text-xs font-semibold text-[#10150a] hover:bg-[#d7ff7d] disabled:opacity-40"><Check size={13}/> Approve</button>
                     <button disabled={busyId === item.id || item.review_status === "rejected"} onClick={() => void updateStatus(item, "rejected")} className="flex h-9 items-center justify-center gap-2 rounded-lg border border-red-400/20 px-3 text-xs text-red-300 hover:bg-red-400/5 disabled:opacity-40"><X size={13}/> Reject</button>
+                    {item.review_status === "approved" && <button onClick={() => { setEditorItem(item); setDraftTitle(item.title); setDraftCategory(item.category_candidates[0] || "Markets"); setDraftSummary(""); setDraftWhy(""); setDraftAudience(""); setDraftSignal("worth_watching"); }} className="flex h-9 items-center justify-center rounded-lg border border-[#c7f36b]/30 px-3 text-xs font-semibold text-[#d8f5a0] hover:bg-[#c7f36b]/5">Create OSA brief</button>}
                   </div>
                 </div>
               </article>
