@@ -84,6 +84,57 @@ function classifyCategories(title: string, description: string, source: Source):
   return categories;
 }
 
+type AutoPublishDecision = { score: number; eligible: boolean; reasons: string[] };
+
+function assessForAutoPublish(item: FeedItem, source: Source, categories: string[]): AutoPublishDecision {
+  const tier = source.trust_tier;
+  const published = item.publishedAt ? new Date(item.publishedAt).getTime() : 0;
+  const ageHours = published ? (Date.now() - published) / 3_600_000 : Number.POSITIVE_INFINITY;
+  const detail = item.description.trim().length;
+  const trusted = tier <= 2;
+  const fresh = ageHours >= -6 && ageHours <= 72;
+  const enoughDetail = detail >= 120;
+  const hasCategory = categories.length > 0;
+  const secureLink = (() => { try { return new URL(item.link).protocol === "https:"; } catch { return false; } })();
+  const uncertain = /\b(unconfirmed|unverified|rumou?r|alleged(?:ly)?|developing story)\b/i.test(`${item.title} ${item.description}`);
+  const tierPoints = tier === 1 ? 35 : tier === 2 ? 27 : 12;
+  const freshnessPoints = ageHours >= -6 && ageHours <= 24 ? 25 : fresh ? 18 : ageHours <= 168 ? 10 : 0;
+  const detailPoints = detail >= 500 ? 20 : detail >= 200 ? 16 : detail >= 120 ? 10 : 0;
+  const score = Math.min(100, tierPoints + freshnessPoints + detailPoints + (hasCategory ? 20 : 0));
+  const reasons: string[] = [];
+  if (!trusted) reasons.push("Source trust tier is not eligible.");
+  if (!fresh) reasons.push("Publication date is missing, too old, or in the future.");
+  if (!enoughDetail) reasons.push("Source description is too short.");
+  if (!hasCategory) reasons.push("No eligible OSA category matched.");
+  if (!secureLink) reasons.push("Original source link is not HTTPS.");
+  if (uncertain) reasons.push("Uncertainty or unverified-language indicator found.");
+  if (score <= 72) reasons.push("Score is 72 or below.");
+  return { score, eligible: score > 72 && trusted && fresh && enoughDetail && hasCategory && secureLink && !uncertain, reasons };
+}
+
+function buildAutomaticBrief(item: FeedItem, source: Source, category: string, score: number) {
+  const description = item.description.trim().replace(/\s+/g, " ").slice(0, 1800);
+  const audiences: Record<string, string> = {
+    Markets: "Investors, financial-market professionals, analysts and businesses exposed to market movements.",
+    Startups: "Founders, startup operators, venture investors and people tracking private-market activity.",
+    Technology: "Technology leaders, builders, researchers and businesses assessing technology adoption.",
+    Career: "Job seekers, professionals, employers and people tracking workforce and skills trends.",
+    Learning: "Students, researchers and professionals looking for credible learning and research resources.",
+  };
+  const why: Record<string, string> = {
+    Markets: "This development may affect market conditions, financial institutions, asset prices or the wider economy. Follow the linked source for the underlying announcement and subsequent updates.",
+    Startups: "This development may influence startup competition, company strategy, funding or the wider innovation ecosystem.",
+    Technology: "This development may influence technology adoption, product capabilities, infrastructure or competitive positioning.",
+    Career: "This development may affect hiring demand, workplace priorities or the skills employers value.",
+    Learning: "This resource or research may offer useful knowledge, evidence or learning opportunities. Consult the original source for full details.",
+  };
+  const analysis = /\b(forecast|outlook|expects?|predicts?|analysis|opinion|could|may|might|likely|potential)\b/i.test(`${item.title} ${description}`);
+  const summary = `${description}\n\nWhy it matters\n${why[category]}\n\nWho should care\n${audiences[category]}\n\nEditorial note\nAutomatically prepared from the source description (automated quality score: ${score}/100). This is a source-based brief, not independent verification or investment advice.`;
+  const title = item.title.trim().slice(0, 180);
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 90) + "-" + source.id.slice(0, 8);
+  return { slug, category, eyebrow: analysis ? `${category.toUpperCase()} · ANALYSIS` : category.toUpperCase(), title, summary, source_name: source.name, source_url: item.link, published_at: item.publishedAt || new Date().toISOString(), reading_time_minutes: Math.max(1, Math.ceil(summary.split(/\s+/).length / 200)), signal_level: analysis ? "explainer" : score >= 88 ? "high_signal" : "worth_watching", is_featured: false, status: "published" };
+}
+
 function canonicalize(rawUrl: string): string | null {
   try {
     const url = new URL(rawUrl);
@@ -144,6 +195,8 @@ export async function POST(request: NextRequest) {
   let fetched = 0;
   let inserted = 0;
   let duplicates = 0;
+  let autoPublished = 0;
+  let heldForReview = 0;
   const failures: Array<{ source: string; error: string }> = [];
 
   for (const source of dueSources.slice(0, 12)) {
@@ -187,7 +240,28 @@ export async function POST(request: NextRequest) {
         });
         if (!saveResponse.ok) throw new Error("Could not save a collected item.");
         const savedRows = await saveResponse.json() as Array<{ id: string }>;
-        if (savedRows.length > 0) sourceInserted += savedRows.length;
+        if (savedRows.length > 0) {
+          sourceInserted += savedRows.length;
+          const decision = assessForAutoPublish(item, source, categories);
+          if (decision.eligible) {
+            const brief = buildAutomaticBrief(item, source, categories[0], decision.score);
+            const publishResponse = await fetch(`${supabaseUrl}/rest/v1/feed_entries?on_conflict=slug`, {
+              method: "POST",
+              headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates,return=minimal" },
+              body: JSON.stringify(brief),
+            });
+            if (!publishResponse.ok) throw new Error("The item was collected, but automatic publishing failed.");
+            const statusResponse = await fetch(`${supabaseUrl}/rest/v1/raw_intelligence_items?id=eq.${savedRows[0].id}`, {
+              method: "PATCH",
+              headers: { ...restHeaders, Prefer: "return=minimal" },
+              body: JSON.stringify({ review_status: "published", updated_at: new Date().toISOString() }),
+            });
+            if (!statusResponse.ok) throw new Error("The item was published, but its inbox status could not be updated.");
+            autoPublished += 1;
+          } else {
+            heldForReview += 1;
+          }
+        }
       }
 
       const updateResponse = await fetch(`${supabaseUrl}/rest/v1/intelligence_sources?id=eq.${source.id}`, {
@@ -218,6 +292,8 @@ export async function POST(request: NextRequest) {
     items_inserted: inserted,
     duplicates_or_existing: duplicates,
     failures,
-    note: "Collected items remain private in the review inbox and are not published automatically.",
+    auto_published: autoPublished,
+    held_for_review: heldForReview,
+    publishing_policy: "Automatically publish only new items scoring above 72/100 that also pass source trust, freshness, detail, category, HTTPS-link and uncertainty safeguards. Other items remain private for review.",
   });
 }
