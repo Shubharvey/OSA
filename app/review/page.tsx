@@ -7,6 +7,7 @@ import { ArrowLeft, Check, ExternalLink, Filter, LockKeyhole, LogOut, RefreshCw,
 type ReviewStatus = "new" | "reviewing" | "approved" | "rejected";
 type ReviewItem = {
   id: string;
+  source_id: string;
   title: string;
   description: string;
   canonical_url: string;
@@ -39,6 +40,9 @@ export default function ReviewPage() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"all" | ReviewStatus>("all");
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
+  const [sourceId, setSourceId] = useState("all");
+  const [sources, setSources] = useState<{ id: string; name: string; trust_tier: number }[]>([]);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -49,11 +53,12 @@ export default function ReviewPage() {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ status, q: query });
+      const params = new URLSearchParams({ status, q: query, category, source: sourceId });
       const response = await fetch(`/api/review/items?${params.toString()}`, { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not load the inbox.");
       setItems(result.items as ReviewItem[]);
+      setSources(result.sources || []);
       setAuthenticated(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load the inbox.");
@@ -62,7 +67,7 @@ export default function ReviewPage() {
       setLoading(false);
       setChecking(false);
     }
-  }, [status, query]);
+  }, [status, query, category, sourceId]);
 
   useEffect(() => {
     let active = true;
@@ -73,6 +78,7 @@ export default function ReviewPage() {
           setAuthenticated(true);
           const result = await response.json();
           setItems(result.items as ReviewItem[]);
+          setSources(result.sources || []);
         } else if (response.status !== 401) {
           const result = await response.json();
           setError(result.error || "Review service is not configured.");
@@ -198,6 +204,8 @@ export default function ReviewPage() {
           <div className="flex items-center gap-2 text-sm font-semibold"><Filter size={15} className="text-[#c7f36b]"/> Review inbox</div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search titles…" className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-9 pr-3 text-xs outline-none sm:w-56"/></div>
+            <select value={category} onChange={(event) => setCategory(event.target.value)} className="h-10 rounded-xl border border-white/10 bg-[#11151d] px-3 text-xs text-slate-300 outline-none"><option value="all">All categories</option>{["Markets","Startups","Technology","Career","Learning"].map((value) => <option key={value} value={value}>{value}</option>)}</select>
+            <select value={sourceId} onChange={(event) => setSourceId(event.target.value)} className="h-10 rounded-xl border border-white/10 bg-[#11151d] px-3 text-xs text-slate-300 outline-none"><option value="all">All sources</option>{sources.map((source) => <option key={source.id} value={source.id}>{source.name}</option>)}</select>
             <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)} className="h-10 rounded-xl border border-white/10 bg-[#11151d] px-3 text-xs text-slate-300 outline-none">{statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
           </div>
         </div>
@@ -220,6 +228,7 @@ export default function ReviewPage() {
                     <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-400">{item.description || "No description was provided by the source."}</p>
                     <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500">
                       <span>{item.intelligence_sources?.name || "Unknown source"}</span>
+                      {item.intelligence_sources?.trust_tier && <span className="rounded-full border border-white/10 px-2 py-0.5">Source tier {item.intelligence_sources.trust_tier}</span>}
                       <span>Published: {formatDate(item.source_published_at)}</span>
                       <span>Collected: {formatDate(item.discovered_at)}</span>
                       {item.author && <span>By {item.author}</span>}
