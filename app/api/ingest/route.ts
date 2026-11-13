@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
   let duplicates = 0;
   let autoPublished = 0;
   let heldForReview = 0;
+  let autoRejected = 0;
   const failures: Array<{ source: string; error: string }> = [];
 
   for (const source of dueSources.slice(0, 12)) {
@@ -273,6 +274,16 @@ export async function POST(request: NextRequest) {
           ["Markets", "Startups", "Technology", "Career", "Learning"].includes(category)
         );
         const decision = assessForAutoPublish(item, source, categories);
+        if (decision.score < 60) {
+          const rejectResponse = await fetch(`${supabaseUrl}/rest/v1/raw_intelligence_items?id=eq.${pending.id}&review_status=eq.new`, {
+            method: "PATCH",
+            headers: { ...restHeaders, Prefer: "return=minimal" },
+            body: JSON.stringify({ review_status: "rejected", updated_at: new Date().toISOString() }),
+          });
+          if (!rejectResponse.ok) throw new Error("A low-scoring item qualified for rejection, but its inbox status could not be updated.");
+          autoRejected += 1;
+          continue;
+        }
         if (!decision.eligible) {
           heldForReview += 1;
           continue;
@@ -325,6 +336,7 @@ export async function POST(request: NextRequest) {
     failures,
     auto_published: autoPublished,
     held_for_review: heldForReview,
-    publishing_policy: "Automatically publish pending and newly collected items scoring above 72/100 that also pass source trust, freshness, detail, category, HTTPS-link and uncertainty safeguards. Other items remain private for review.",
+    auto_rejected_below_60: autoRejected,
+    publishing_policy: "Automatically reject items scoring below 60/100 (retaining their records for deduplication and audit), hold items scoring 60–72 or failing safeguards for review, and publish items scoring above 72/100 only when all source trust, freshness, detail, category, HTTPS-link and uncertainty safeguards pass.",
   });
 }
