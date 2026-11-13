@@ -151,12 +151,12 @@ export async function POST(request: NextRequest) {
 
         const saveResponse = await fetch(`${supabaseUrl}/rest/v1/raw_intelligence_items?on_conflict=canonical_url`, {
           method: "POST",
-          headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates,return=minimal" },
+          headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates,return=representation" },
           body: JSON.stringify(payload),
         });
         if (!saveResponse.ok) throw new Error("Could not save a collected item.");
-        const insertedCount = Number(saveResponse.headers.get("content-range")?.split("/")[1]);
-        if (insertedCount > 0) sourceInserted += 1;
+        const savedRows = await saveResponse.json() as Array<{ id: string }>;
+        if (savedRows.length > 0) sourceInserted += savedRows.length;
       }
 
       const updateResponse = await fetch(`${supabaseUrl}/rest/v1/intelligence_sources?id=eq.${source.id}`, {
