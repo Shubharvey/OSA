@@ -93,14 +93,6 @@ export default function HomePage() {
     setFeedbackMessage(rating === "like" ? "Thanks. We'll use this signal to improve your feed." : "Thanks. We'll show you fewer stories like this.");
   }
 
-  function hideStoryCategory(item: IntelligenceItem) {
-    const next = hiddenCategories.includes(item.category) ? hiddenCategories : [...hiddenCategories, item.category];
-    setHiddenCategories(next);
-    try { localStorage.setItem("osa-hidden-categories-v1", JSON.stringify(next)); } catch { /* Local preference storage may be unavailable. */ }
-    setFeedbackMessage(`We'll hide ${item.category} stories on this device. You can change this later by clearing your OSA feed preferences.`);
-    setSelectedStory(null);
-  }
-
   const featured = active === "All" && query.length === 0 ? filtered.find((item) => item.featured) : undefined;
   const remaining = featured ? filtered.filter((item) => item.id !== featured.id) : filtered;
 
