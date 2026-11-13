@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Complete every field and choose a valid category and publishing action." }, { status: 400 });
   }
 
+  // The validation above guarantees this is one of the allowed category strings.
+  const category = body.category!;
   const sourceResponse = await fetch(`${db.url}/rest/v1/raw_intelligence_items?id=eq.${body.item_id}&select=id,title,canonical_url,source_published_at,review_status,intelligence_sources(name)`, { headers: db.headers, cache: "no-store" });
   if (!sourceResponse.ok) return NextResponse.json({ error: "Could not verify the source item." }, { status: 502 });
   const sources = await sourceResponse.json();
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
   const slug = body.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 100) + "-" + body.item_id.slice(0, 8);
   const summary = `${body.summary.trim()}\n\nWhy it matters\n${body.why_it_matters.trim()}\n\nWho should care\n${body.who_should_care.trim()}`;
   const payload = {
-    slug, category: body.category, eyebrow: body.category.toUpperCase(), title: body.title.trim(),
+    slug, category, eyebrow: category.toUpperCase(), title: body.title.trim(),
     summary, source_name: item.intelligence_sources?.name || "Original source",
     source_url: item.canonical_url, published_at: item.source_published_at || new Date().toISOString(),
     reading_time_minutes: Math.max(1, Math.ceil(summary.split(/\\s+/).length / 200)),
