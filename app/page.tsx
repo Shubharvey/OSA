@@ -49,6 +49,7 @@ export default function HomePage() {
   const [items, setItems] = useState<IntelligenceItem[]>(supabase ? [] : demoItems);
   const [loading, setLoading] = useState(Boolean(supabase));
   const [feedError, setFeedError] = useState<string | null>(null);
+  const [selectedStory, setSelectedStory] = useState<IntelligenceItem | null>(null);
 
   useEffect(() => {
     const client = supabase;
@@ -114,7 +115,7 @@ export default function HomePage() {
                 const palette=palettes[index%palettes.length];
                 const heights=["h-36","h-48","h-40","h-32","h-52"];
                 return <article key={item.id} className="mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-[19px] bg-white shadow-[0_3px_14px_rgba(40,40,30,0.07)]">
-                  <a href={item.url} target="_blank" rel="noreferrer" className="block">
+                  <button type="button" onClick={() => setSelectedStory(item)} className="block w-full text-left">
                     <div className={"relative "+heights[index%heights.length]+" overflow-hidden bg-gradient-to-br "+palette.bg}>
                       <div className="absolute -right-7 -top-8 h-28 w-28 rounded-full border-[18px] border-white/20"/>
                       <div className="absolute -bottom-10 -left-7 h-32 w-32 rounded-full bg-white/20"/>
@@ -124,13 +125,26 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="p-3"><p className="text-[9px] font-semibold uppercase tracking-wide text-[#a3645c]">{item.source}</p><h2 className="mt-1.5 text-[13px] font-semibold leading-[1.35] text-[#292a24]">{item.title}</h2><p className="mt-2 line-clamp-3 text-[10px] leading-[1.5] text-[#85847b]">{item.summary}</p><div className="mt-3 flex items-center justify-between border-t border-[#f0eee8] pt-2"><span className="text-[9px] text-[#99988f]">{item.publishedAt}</span><span className="text-[9px] font-semibold" style={{color:palette.tag}}>{item.readTime}</span></div></div>
-                  </a>
+                  </button>
                 </article>;
               })}
             </div> : null}
             {!loading && !feedError && filtered.length===0 ? <div className="rounded-2xl border border-dashed border-[#dedcd3] bg-white/70 px-5 py-12 text-center text-sm text-[#929087]">No stories here yet. Try another category or search.</div> : null}
             <p className="px-3 py-6 text-center text-[10px] leading-5 text-[#aaa99f]">Source-linked intelligence from OSA. Always check the original source.</p>
           </div>
+          {selectedStory ? <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="presentation" onClick={() => setSelectedStory(null)}>
+            <section role="dialog" aria-modal="true" aria-labelledby="story-reader-title" className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[28px] bg-[#f7f6f1] text-[#24251f] shadow-2xl sm:rounded-[28px]" onClick={(event) => event.stopPropagation()}>
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e9e7df] bg-[#f7f6f1]/95 px-5 py-4 backdrop-blur-xl"><span className="text-xs font-bold tracking-[0.18em] text-[#4e5044]">OSA STORY</span><button onClick={() => setSelectedStory(null)} aria-label="Close story" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9e8df] text-lg text-[#4e5044]">×</button></div>
+              <div className="px-5 pb-7 pt-5 sm:px-8">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#a3645c]"><span>{selectedStory.category}</span><span>·</span><span>{selectedStory.publishedAt}</span></div>
+                <h2 id="story-reader-title" className="mt-3 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{selectedStory.title}</h2>
+                <div className="mt-4 flex items-center justify-between border-b border-[#e9e7df] pb-4"><div><p className="text-xs font-semibold text-[#4e5044]">{selectedStory.source}</p><p className="mt-1 text-[11px] text-[#929087]">{selectedStory.readTime} · {selectedStory.signal}</p></div><span className="rounded-full bg-[#e9e8df] px-3 py-1.5 text-[10px] font-semibold text-[#4e5044]">OSA brief</span></div>
+                <div className="prose prose-sm mt-6 max-w-none whitespace-pre-line text-[14px] leading-7 text-[#55564e]">{selectedStory.summary}</div>
+                <div className="mt-8 rounded-2xl border border-[#e6e3d9] bg-white p-4"><p className="text-xs font-semibold text-[#4e5044]">Want to read the original reporting?</p><p className="mt-1 text-xs leading-5 text-[#85847b]">Visit the publisher for the complete original article, additional context and updates.</p><a href={selectedStory.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#4e5044] px-5 py-3 text-xs font-semibold text-white">Continue to {selectedStory.source} <ArrowUpRight size={14}/></a></div>
+                <p className="mt-5 text-[10px] leading-5 text-[#aaa99f]">OSA briefs are informational summaries based on the cited source. Check the original publisher for the full report and latest updates.</p>
+              </div>
+            </section>
+          </div> : null}
           <nav aria-label="Bottom navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e9e7df] bg-[#f7f6f1]/95 px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-2 backdrop-blur-xl"><div className="mx-auto flex max-w-lg items-center justify-around"><button onClick={() => setActive("All")} className={"flex flex-col items-center gap-1 py-1 text-[10px] "+(active==="All"?"text-[#4e5044]":"text-[#a09f95]")}><Home size={19}/><span>Home</span></button><button onClick={() => setActive("Markets")} className={"flex flex-col items-center gap-1 py-1 text-[10px] "+(active==="Markets"?"text-[#4e5044]":"text-[#a09f95]")}><TrendingUp size={19}/><span>Markets</span></button><button onClick={() => setActive("Startups")} className={"flex flex-col items-center gap-1 py-1 text-[10px] "+(active==="Startups"?"text-[#4e5044]":"text-[#a09f95]")}><Compass size={19}/><span>Explore</span></button><button onClick={() => setActive("Learning")} className={"flex flex-col items-center gap-1 py-1 text-[10px] "+(active==="Learning"?"text-[#4e5044]":"text-[#a09f95]")}><GraduationCap size={19}/><span>Learning</span></button><Link href="/my-space" className="flex flex-col items-center gap-1 py-1 text-[10px] text-[#a09f95]"><Bookmark size={19}/><span>My Space</span></Link></div></nav>
         </section>
         <div className="hidden lg:block">\n        <header className="sticky top-0 z-20 flex min-h-[64px] items-center justify-between gap-3 border-b border-white/10 bg-[#090b10]/95 px-4 py-3 backdrop-blur-xl sm:h-[72px] sm:px-5 md:px-9">
