@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, BriefcaseBusiness, Cpu, GraduationCap, LayoutDashboard, NotebookPen, Rocket, Settings2 } from "lucide-react";
+import { Activity, BriefcaseBusiness, Cpu, GraduationCap, LayoutDashboard, NotebookPen, Rocket, Settings2, ClipboardCheck } from "lucide-react";
 import Link from "next/link";
 import type { Category } from "@/types/intelligence";
 
