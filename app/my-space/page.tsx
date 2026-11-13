@@ -48,7 +48,7 @@ export default function MySpacePage() {
   const [deleting, setDeleting] = useState(false);
   const [interestSignals, setInterestSignals] = useState<InterestSignal[]>([]);
   const [newInterest, setNewInterest] = useState("");
-  const [savingInterest, setSavingInterest] = useState(false);
+  const [savingInterest, setSavingInterest] = useState(false);\n  const [analysingEntryId, setAnalysingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) {
@@ -106,6 +106,33 @@ export default function MySpacePage() {
     if (error) setMessage(error.code === "23505" ? "That interest is already on your list." : error.message);
     else if (data) { setInterestSignals((current) => [data as InterestSignal, ...current]); setNewInterest(""); setMessage("Interest added to your personalisation settings."); }
     setSavingInterest(false);
+  }
+
+  async function analyseEntry(entry: Entry) {
+    if (!supabase || !session?.access_token || !entry.ai_analysis_consent || analysingEntryId) return;
+    setAnalysingEntryId(entry.id);
+    setMessage("");
+    try {
+      const response = await fetch("/api/personal-intelligence/analyse-entry", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ entry_id: entry.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Analysis could not be completed.");
+      setMessage(result.message || "Suggestions are ready for review.");
+      const { data, error } = await supabase.from("personal_interest_signals")
+        .select("id, topic, source, confidence, status, created_at")
+        .order("created_at", { ascending: false });
+      if (!error && data) setInterestSignals(data as InterestSignal[]);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Analysis could not be completed.");
+    } finally {
+      setAnalysingEntryId(null);
+    }
   }
 
   async function reviewInterest(id: string, status: "approved" | "rejected") {
@@ -250,7 +277,7 @@ export default function MySpacePage() {
               </div>
               <div className="rounded-2xl border border-white/10 bg-[#11151d] p-5">
                 <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">Your entries</h2><span className="text-xs text-slate-500">{entries.length}</span></div>
-                {entries.length === 0 ? <p className="text-sm leading-6 text-slate-500">Your space is ready. Your saved thoughts will appear here.</p> : <div className="space-y-3">{entries.map((entry) => <article key={entry.id} className="rounded-xl border border-white/10 bg-black/10 p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] uppercase tracking-wider text-[#c7f36b]">{entryTypes.find((type) => type.value === entry.entry_type)?.label ?? entry.entry_type}</p><h3 className="mt-1 font-medium">{entry.title || "Untitled entry"}</h3></div><button type="button" onClick={() => setEntryPendingDelete(entry)} aria-label={`Delete ${entry.title || "untitled entry"}`} className="rounded-lg px-2 py-1 text-xs text-slate-500 transition hover:bg-red-400/10 hover:text-red-300">Delete</button></div><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-400">{entry.body}</p><p className="mt-3 text-[10px] text-slate-600">{new Date(entry.created_at).toLocaleString()} · {entry.ai_analysis_consent ? "Analysis allowed" : "Private — not for analysis"}</p></article>)}</div>}
+                {entries.length === 0 ? <p className="text-sm leading-6 text-slate-500">Your space is ready. Your saved thoughts will appear here.</p> : <div className="space-y-3">{entries.map((entry) => <article key={entry.id} className="rounded-xl border border-white/10 bg-black/10 p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] uppercase tracking-wider text-[#c7f36b]">{entryTypes.find((type) => type.value === entry.entry_type)?.label ?? entry.entry_type}</p><h3 className="mt-1 font-medium">{entry.title || "Untitled entry"}</h3></div><button type="button" onClick={() => setEntryPendingDelete(entry)} aria-label={`Delete ${entry.title || "untitled entry"}`} className="rounded-lg px-2 py-1 text-xs text-slate-500 transition hover:bg-red-400/10 hover:text-red-300">Delete</button></div><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-400">{entry.body}</p><p className="mt-3 text-[10px] text-slate-600">{new Date(entry.created_at).toLocaleString()} · {entry.ai_analysis_consent ? "Analysis allowed" : "Private — not for analysis"}</p>{entry.ai_analysis_consent && <button type="button" onClick={() => analyseEntry(entry)} disabled={analysingEntryId !== null} className="mt-3 rounded-lg border border-[#c7f36b]/20 px-3 py-2 text-xs font-medium text-[#d8f5a0] transition hover:bg-[#c7f36b]/10 disabled:cursor-not-allowed disabled:opacity-50">{analysingEntryId === entry.id ? "Analysing…" : "Analyse for interests"}</button>}</article>)}</div>}
               </div>
               <div className="rounded-2xl border border-white/10 p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold"><Brain size={16} className="text-[#c7f36b]"/> Personal intelligence, coming next</div>
