@@ -7,7 +7,7 @@
 - A protected server-side collector at `POST /api/ingest`.
 - A GitHub Actions schedule that triggers collection every three hours.
 - URL-based deduplication and source-level fetch intervals.
-- No AI calls and no automatic publishing.
+- No paid AI calls. Qualifying items can be automatically published using deterministic rules; low-scoring items are automatically rejected while their records are retained.
 
 The collector stores feed headlines, descriptions, source links, authors and publication timestamps. It does not crawl full articles.
 
@@ -52,8 +52,9 @@ After the migration, Vercel environment variables and GitHub secrets are in plac
 ## Important safeguards
 
 - New records start with `review_status = 'new'`.
-- No collector code writes to `feed_entries`.
-- Nothing is published automatically.
+- The collector writes to `feed_entries` only for items scoring above 72/100 that also pass all publishing safeguards.
+- Items scoring below 60/100 are marked `rejected` and retained for audit and URL-based deduplication, so they are not repeatedly reprocessed.
+- Items scoring 60–72/100, and higher-scoring items that fail a safeguard, remain private for review.
 - Only trusted server-side code uses the service-role key.
 - Feed descriptions are limited to 5,000 characters.
 - The initial source list is a starting point; source health, licensing and relevance should be reviewed before expanding it.
