@@ -199,13 +199,13 @@ export default function MySpacePage() {
   return (
     <main className="min-h-screen bg-[#090b10] text-slate-100">
       <header className="border-b border-white/10 bg-[#0c0f15]">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
           <Link href="/" className="flex items-center gap-3 text-sm text-slate-400 hover:text-white"><ArrowLeft size={16}/> Back to OSA</Link>
           {session && <button onClick={() => supabase?.auth.signOut()} className="flex items-center gap-2 text-xs text-slate-400 hover:text-white"><LogOut size={15}/> Sign out</button>}
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-5 py-10 md:py-14">
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-5 md:py-14">
         <div className="mb-9 max-w-2xl">
           <div className="mb-3 flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-[#c7f36b]"><NotebookPen size={14}/> YOUR PERSONAL SPACE</div>
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">A space for your thinking.</h1>
@@ -263,8 +263,8 @@ export default function MySpacePage() {
               <div className="rounded-2xl border border-white/10 bg-[#11151d] p-5">
                 <div className="mb-4 flex items-center gap-2"><Brain size={17} className="text-[#c7f36b]" /><h2 className="font-semibold">Your interests</h2></div>
                 <p className="mb-4 text-xs leading-5 text-slate-500">Add topics you want OSA to prioritise. Interests you add yourself are approved immediately. Diary-based suggestions will appear here for your review before they affect recommendations.</p>
-                <form onSubmit={addInterest} className="mb-4 flex gap-2">
-                  <input value={newInterest} onChange={(event) => setNewInterest(event.target.value)} maxLength={80} placeholder="e.g. Investment operations" aria-label="Add an interest" className="h-10 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#090b10] px-3 text-xs outline-none focus:border-[#c7f36b]/40" />
+                <form onSubmit={addInterest} className="mb-4 flex min-w-0 flex-wrap gap-2">
+                  <input value={newInterest} onChange={(event) => setNewInterest(event.target.value)} maxLength={80} placeholder="e.g. Investment operations" aria-label="Add an interest" className="h-10 min-w-0 flex-1 basis-32 rounded-xl border border-white/10 bg-[#090b10] px-3 text-xs outline-none focus:border-[#c7f36b]/40" />
                   <button disabled={savingInterest || !newInterest.trim()} className="flex h-10 items-center gap-1 rounded-xl bg-[#c7f36b] px-3 text-xs font-semibold text-[#10150a] disabled:opacity-50"><Plus size={14} /> Add</button>
                 </form>
                 {interestSignals.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-xs leading-5 text-slate-500">No interests added yet. Your approved interests will be kept here.</p> : (
