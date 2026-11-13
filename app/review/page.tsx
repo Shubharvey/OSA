@@ -145,7 +145,7 @@ export default function ReviewPage() {
   }
 
   function normalizedTitle(value: string) {
-    return value.toLowerCase().replace(/&amp;/g, "and").replace(/[^a-z0-9 ]/g, " ").replace(/\\b(the|a|an|to|of|in|on|for|with|and)\\b/g, " ").replace(/\\s+/g, " ").trim();
+    return value.toLowerCase().replace(/&amp;/g, "and").replace(/[^a-z0-9 ]/g, " ").replace(/\b(the|a|an|to|of|in|on|for|with|and)\b/g, " ").replace(/\s+/g, " ").trim();
   }
 
   function similarity(left: string, right: string) {
