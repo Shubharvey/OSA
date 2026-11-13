@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Search, SlidersHorizontal, Sparkles, TrendingUp, ArrowUpRight, Bookmark, Home, Compass, GraduationCap, BriefcaseBusiness } from "lucide-react";
+import { Bell, Search, SlidersHorizontal, Sparkles, TrendingUp, ArrowUpRight, Bookmark, Home, Compass, GraduationCap, BriefcaseBusiness, ThumbsUp, ThumbsDown, Ban } from "lucide-react";
 import Link from "next/link";
 import { Sidebar } from "@/components/navigation/sidebar";
 import { IntelligenceCard } from "@/components/cards/intelligence-card";
@@ -50,6 +50,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState(Boolean(supabase));
   const [feedError, setFeedError] = useState<string | null>(null);
   const [selectedStory, setSelectedStory] = useState<IntelligenceItem | null>(null);
+  const [storyFeedback, setStoryFeedback] = useState<Record<string, "like" | "dislike">>({});
+  const [hiddenCategories, setHiddenCategories] = useState<string[]>([]);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
 
   useEffect(() => {
     const client = supabase;
@@ -77,10 +80,26 @@ export default function HomePage() {
   }, []);
 
   const filtered = useMemo(() => items.filter((item) => {
-    const matchesCategory = active === "All" || item.category === active;
+    const matchesCategory = (active === "All" || item.category === active) && !hiddenCategories.includes(item.category);
     const haystack = `${item.title} ${item.summary} ${item.category}`.toLowerCase();
     return matchesCategory && haystack.includes(query.toLowerCase());
-  }), [active, query, items]);
+  }), [active, query, items, hiddenCategories]);
+  function rateStory(item: IntelligenceItem, rating: "like" | "dislike") {
+    const next = { ...storyFeedback, [item.id]: storyFeedback[item.id] === rating ? undefined : rating };
+    if (next[item.id] === undefined) delete next[item.id];
+    setStoryFeedback(next);
+    try { localStorage.setItem("osa-story-feedback-v1", JSON.stringify(next)); } catch { /* Local preference storage may be unavailable. */ }
+    setFeedbackMessage(rating === "like" ? "Thanks. We'll use this signal to improve your feed." : "Thanks. We'll show you fewer stories like this.");
+  }
+
+  function hideStoryCategory(item: IntelligenceItem) {
+    const next = hiddenCategories.includes(item.category) ? hiddenCategories : [...hiddenCategories, item.category];
+    setHiddenCategories(next);
+    try { localStorage.setItem("osa-hidden-categories-v1", JSON.stringify(next)); } catch { /* Local preference storage may be unavailable. */ }
+    setFeedbackMessage(`We'll hide ${item.category} stories on this device. You can change this later by clearing your OSA feed preferences.`);
+    setSelectedStory(null);
+  }
+
   const featured = active === "All" && query.length === 0 ? filtered.find((item) => item.featured) : undefined;
   const remaining = featured ? filtered.filter((item) => item.id !== featured.id) : filtered;
 
@@ -140,6 +159,16 @@ export default function HomePage() {
                 <h2 id="story-reader-title" className="mt-3 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{selectedStory.title}</h2>
                 <div className="mt-4 flex items-center justify-between border-b border-[#e9e7df] pb-4"><div><p className="text-xs font-semibold text-[#4e5044]">{selectedStory.source}</p><p className="mt-1 text-[11px] text-[#929087]">{selectedStory.readTime} · {selectedStory.signal}</p></div><span className="rounded-full bg-[#e9e8df] px-3 py-1.5 text-[10px] font-semibold text-[#4e5044]">OSA brief</span></div>
                 <div className="prose prose-sm mt-6 max-w-none whitespace-pre-line text-[14px] leading-7 text-[#55564e]">{selectedStory.summary}</div>
+                <div className="mt-7 rounded-2xl border border-[#e6e3d9] bg-white p-4">
+                  <p className="text-xs font-semibold text-[#4e5044]">Help us tune your feed</p>
+                  <p className="mt-1 text-xs leading-5 text-[#85847b]">Was this useful? Your feedback helps shape what you see next.</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button onClick={() => rateStory(selectedStory, "like")} aria-pressed={storyFeedback[selectedStory.id] === "like"} className={"flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-xs font-semibold "+(storyFeedback[selectedStory.id] === "like" ? "border-[#71845c] bg-[#edf1e5] text-[#4e6841]" : "border-[#e7e5dd] text-[#77766e]")}><ThumbsUp size={15}/> Useful</button>
+                    <button onClick={() => rateStory(selectedStory, "dislike")} aria-pressed={storyFeedback[selectedStory.id] === "dislike"} className={"flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-xs font-semibold "+(storyFeedback[selectedStory.id] === "dislike" ? "border-[#a3645c] bg-[#f5eae6] text-[#8e574d]" : "border-[#e7e5dd] text-[#77766e]")}><ThumbsDown size={15}/> Not useful</button>
+                  </div>
+                  <button onClick={() => hideStoryCategory(selectedStory)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#e7e5dd] px-3 py-3 text-xs font-semibold text-[#8e574d]"><Ban size={15}/> Never show me {selectedStory.category} stories</button>
+                  {feedbackMessage ? <p role="status" className="mt-3 text-[11px] leading-5 text-[#71845c]">{feedbackMessage}</p> : null}
+                </div>
                 <div className="mt-8 rounded-2xl border border-[#e6e3d9] bg-white p-4"><p className="text-xs font-semibold text-[#4e5044]">Want to read the original reporting?</p><p className="mt-1 text-xs leading-5 text-[#85847b]">Visit the publisher for the complete original article, additional context and updates.</p><a href={selectedStory.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#4e5044] px-5 py-3 text-xs font-semibold text-white">Continue to {selectedStory.source} <ArrowUpRight size={14}/></a></div>
                 <p className="mt-5 text-[10px] leading-5 text-[#aaa99f]">OSA briefs are informational summaries based on the cited source. Check the original publisher for the full report and latest updates.</p>
               </div>
