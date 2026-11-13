@@ -41,8 +41,10 @@ export async function GET(request: NextRequest) {
 
   const status = request.nextUrl.searchParams.get("status") || "all";
   const search = (request.nextUrl.searchParams.get("q") || "").trim().slice(0, 120);
+  const category = request.nextUrl.searchParams.get("category") || "all";
+  const source = request.nextUrl.searchParams.get("source") || "all";
   const params = new URLSearchParams({
-    select: "id,title,description,canonical_url,author,category_candidates,region_candidates,source_published_at,discovered_at,review_status,raw_metadata,intelligence_sources(name,trust_tier)",
+    select: "id,source_id,title,description,canonical_url,author,category_candidates,region_candidates,source_published_at,discovered_at,review_status,raw_metadata,intelligence_sources(name,trust_tier)",
     order: "discovered_at.desc",
     limit: "200",
   });
@@ -50,6 +52,8 @@ export async function GET(request: NextRequest) {
     params.set("review_status", `eq.${status}`);
   }
   if (search) params.set("title", `ilike.*${search.replace(/[,*()]/g, " ")}*`);
+  if (category !== "all" && ["Markets","Startups","Technology","Career","Learning"].includes(category)) params.set("category_candidates", `cs.{${category}}`);
+  if (source !== "all" && /^[0-9a-f-]{36}$/i.test(source)) params.set("source_id", `eq.${source}`);
 
   const response = await fetch(`${supabase.url}/rest/v1/raw_intelligence_items?${params.toString()}`, {
     headers: supabase.headers,
@@ -61,7 +65,9 @@ export async function GET(request: NextRequest) {
   }
 
   const items = await response.json();
-  return NextResponse.json({ items });
+  const sourceResponse = await fetch(`${supabase.url}/rest/v1/intelligence_sources?select=id,name,trust_tier&is_active=eq.true&order=name.asc`, { headers: supabase.headers, cache: "no-store" });
+  const sources = sourceResponse.ok ? await sourceResponse.json() : [];
+  return NextResponse.json({ items, sources });
 }
 
 export async function PATCH(request: NextRequest) {
