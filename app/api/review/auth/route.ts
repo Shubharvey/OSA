@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const runtime = "nodejs";
 
 const COOKIE_NAME = "osa_review_access";
-const COOKIE_VALUE = "authenticated";
+function cookieValue(secret: string) {\n  return createHmac("sha256", secret).update("osa-review-session-v1").digest("hex");\n}
 
 function passwordMatches(input: string, expected: string) {
   const left = Buffer.from(input);
