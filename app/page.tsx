@@ -137,6 +137,7 @@ export default function HomePage() {
             <p className="mt-8 text-center text-[11px] leading-5 text-slate-600">OSA displays published, source-linked intelligence. Always check original sources; content is informational, not investment advice.</p>
           </section>
         </div>
+        </div>
       </main>
     </div>
   );
