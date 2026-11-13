@@ -4,7 +4,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const runtime = "nodejs";
 
 const COOKIE_NAME = "osa_review_access";
-const ALLOWED_STATUSES = ["new", "reviewing", "approved", "rejected", "published"] as const;
+const FILTER_STATUSES = ["new", "reviewing", "approved", "rejected", "published"] as const;
+const MUTABLE_STATUSES = ["new", "reviewing", "approved", "rejected"] as const;
 
 function cookieValue(secret: string) {
   return createHmac("sha256", secret).update("osa-review-session-v1").digest("hex");
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     order: "discovered_at.desc",
     limit: "200",
   });
-  if (status !== "all" && ALLOWED_STATUSES.includes(status as typeof ALLOWED_STATUSES[number])) {
+  if (status !== "all" && FILTER_STATUSES.includes(status as typeof FILTER_STATUSES[number])) {
     params.set("review_status", `eq.${status}`);
   }
   if (search) params.set("title", `ilike.*${search.replace(/[,*()]/g, " ")}*`);
@@ -82,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  if (!body.id || !/^[0-9a-f-]{36}$/i.test(body.id) || !ALLOWED_STATUSES.includes(body.status as typeof ALLOWED_STATUSES[number])) {
+  if (!body.id || !/^[0-9a-f-]{36}$/i.test(body.id) || !MUTABLE_STATUSES.includes(body.status as typeof MUTABLE_STATUSES[number])) {
     return NextResponse.json({ error: "A valid item and review status are required." }, { status: 400 });
   }
 
