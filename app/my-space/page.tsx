@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, BookOpen, Brain, Check, LockKeyhole, LogOut, NotebookPen, Plus, Send, ShieldCheck, Trash2, X, XCircle } from "lucide-react";
+import { ArrowLeft, BookOpen, Brain, Check, LockKeyhole, LogOut, NotebookPen, Plus, Send, ShieldCheck, Trash2, X, XCircle, Home, Compass } from "lucide-react";
 import Link from "next/link";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
@@ -197,17 +197,17 @@ export default function MySpacePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#090b10] text-slate-100">
-      <header className="border-b border-white/10 bg-[#0c0f15]">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
-          <Link href="/" className="flex items-center gap-3 text-sm text-slate-400 hover:text-white"><ArrowLeft size={16}/> Back to OSA</Link>
-          {session && <button onClick={() => supabase?.auth.signOut()} className="flex items-center gap-2 text-xs text-slate-400 hover:text-white"><LogOut size={15}/> Sign out</button>}
+    <main className="min-h-screen bg-[#f7f6f1] text-[#24251f] lg:bg-[#090b10] lg:text-slate-100 pb-24 lg:pb-0">
+      <header className="sticky top-0 z-30 border-b border-[#e9e7df] bg-[#f7f6f1]/95 backdrop-blur-xl lg:static lg:border-[#e7e5dd] lg:border-white/10 lg:bg-[#0c0f15]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-5 lg:py-5"><Link href="/" className="flex items-center gap-2 text-[#4e5044] lg:text-[#24251f] lg:text-white"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4e5044] text-sm font-black text-white">O</span><span className="text-base font-extrabold tracking-[0.18em]">OSA</span><span className="ml-1 hidden text-[9px] tracking-[0.18em] text-[#99988f] sm:inline lg:text-[#99988f] lg:text-slate-500">ONE STEP AHEAD</span></Link>
+          <Link href="/" className="hidden items-center gap-2 text-sm text-slate-500 hover:text-[#4e5044] lg:flex lg:text-[#85847b] lg:text-slate-400 lg:hover:text-white"><ArrowLeft size={16}/> Back to OSA</Link>
+          {session && <button onClick={() => supabase?.auth.signOut()} className="flex items-center gap-2 rounded-full bg-[#e9e8df] px-3 py-2 text-xs text-[#4e5044] hover:bg-[#dedcd3] lg:bg-transparent lg:px-0 lg:py-0 lg:text-slate-400 lg:hover:text-white"><LogOut size={15}/> Sign out</button>}
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-5 md:py-14">
-        <div className="mb-9 max-w-2xl">
-          <div className="mb-3 flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-[#c7f36b]"><NotebookPen size={14}/> YOUR PERSONAL SPACE</div>
+      <div className="mx-auto w-full max-w-5xl px-3 py-5 sm:px-5 sm:py-8 md:py-14 lg:px-5">
+        <div className="mb-6 max-w-2xl rounded-[22px] bg-white px-5 py-5 shadow-[0_3px_14px_rgba(40,40,30,0.05)] lg:mb-9 lg:rounded-none lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none">
+          <div className="mb-3 flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-[#a3645c] lg:text-[#c7f36b]"><NotebookPen size={14}/> YOUR PERSONAL SPACE</div>
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">A space for your thinking.</h1>
           <p className="mt-3 text-sm leading-6 text-slate-400">Capture thoughts, experiences, plans and skills you want to develop. Your entries are private to your account.</p>
         </div>
@@ -216,16 +216,16 @@ export default function MySpacePage() {
         {checking && <div className="rounded-2xl border border-white/10 p-6 text-sm text-slate-400">Checking your sign-in…</div>}
 
         {!checking && supabase && !session && (
-          <section className="max-w-lg rounded-2xl border border-white/10 bg-[#11151d] p-6 md:p-8">
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#c7f36b]/10 text-[#c7f36b]"><LockKeyhole size={20}/></div>
+          <section className="max-w-lg rounded-2xl border border-[#e9e7df] bg-white shadow-[0_3px_14px_rgba(40,40,30,0.05)] lg:border-white/10 lg:bg-[#11151d] lg:shadow-none p-6 md:p-8">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#edf1e5] lg:bg-[#c7f36b]/10 text-[#c7f36b]"><LockKeyhole size={20}/></div>
             <h2 className="text-xl font-semibold">Sign in to your private space</h2>
             <p className="mt-2 text-sm leading-6 text-slate-400">We'll email you a secure sign-in link. No password needed.</p>
             {emailSent ? (
-              <div className="mt-6 rounded-xl border border-[#c7f36b]/20 bg-[#c7f36b]/5 p-4 text-sm text-[#d8f5a0]">Check your inbox for the sign-in link. Open it on this device to continue to My Space.</div>
+              <div className="mt-6 rounded-xl border border-[#dfe4d4] lg:border-[#c7f36b]/20 bg-[#f0f2e9] lg:bg-[#c7f36b]/5 p-4 text-sm text-[#4e6841] lg:text-[#d8f5a0]">Check your inbox for the sign-in link. Open it on this device to continue to My Space.</div>
             ) : (
               <form onSubmit={requestSignIn} className="mt-6 space-y-3">
                 <label className="block text-xs text-slate-400" htmlFor="email">Email address</label>
-                <input id="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className="h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none focus:border-[#c7f36b]/50"/>
+                <input id="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className="h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none focus:border-[#aeb99a] lg:border-[#c7f36b]/50"/>
                 <button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c7f36b] text-sm font-semibold text-[#10150a] hover:bg-[#d4fa82]"><Send size={15}/> Email me a sign-in link</button>
               </form>
             )}
@@ -242,13 +242,13 @@ export default function MySpacePage() {
               <form onSubmit={saveEntry} className="space-y-4">
                 <div>
                   <label htmlFor="entry-type" className="mb-2 block text-xs text-slate-400">What is this about?</label>
-                  <select id="entry-type" value={entryType} onChange={(event) => setEntryType(event.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-[#090b10] px-3 text-sm outline-none"><option value="reflection">Thought / reflection</option><option value="idea">Idea</option><option value="plan">Plan</option><option value="learning_goal">Skill to develop</option><option value="experience">Experience</option></select>
+                  <select id="entry-type" value={entryType} onChange={(event) => setEntryType(event.target.value)} className="h-11 w-full rounded-xl border border-[#e7e5dd] bg-[#fbfaf7] lg:border-white/10 lg:bg-[#090b10] px-3 text-sm outline-none"><option value="reflection">Thought / reflection</option><option value="idea">Idea</option><option value="plan">Plan</option><option value="learning_goal">Skill to develop</option><option value="experience">Experience</option></select>
                 </div>
-                <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Give this note a title (optional)" className="h-11 w-full rounded-xl border border-white/10 bg-[#090b10] px-3 text-sm outline-none focus:border-[#c7f36b]/40"/>
-                <textarea required minLength={1} maxLength={20000} rows={9} value={body} onChange={(event) => setBody(event.target.value)} placeholder="What's on your mind? Write about an idea, a plan, something you experienced, or a skill you want to build…" className="w-full resize-y rounded-xl border border-white/10 bg-[#090b10] p-4 text-sm leading-6 outline-none placeholder:text-slate-600 focus:border-[#c7f36b]/40"/>
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-black/10 p-4">
+                <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Give this note a title (optional)" className="h-11 w-full rounded-xl border border-white/10 bg-[#090b10] px-3 text-sm outline-none focus:border-[#aeb99a] lg:border-[#c7f36b]/40"/>
+                <textarea required minLength={1} maxLength={20000} rows={9} value={body} onChange={(event) => setBody(event.target.value)} placeholder="What's on your mind? Write about an idea, a plan, something you experienced, or a skill you want to build…" className="w-full resize-y rounded-xl border border-white/10 bg-[#090b10] p-4 text-sm leading-6 outline-none placeholder:text-[#aaa99f] lg:text-slate-600 focus:border-[#c7f36b]/40"/>
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#eeece5] bg-[#faf9f5] lg:border-white/10 lg:bg-black/10 p-4">
                   <input type="checkbox" checked={analysisConsent} onChange={(event) => setAnalysisConsent(event.target.checked)} className="mt-1 accent-[#c7f36b]"/>
-                  <span><span className="block text-sm font-medium text-slate-200">Allow OSA to analyse this entry</span><span className="mt-1 block text-xs leading-5 text-slate-500">Optional. If enabled, you can ask OSA to send this entry to its AI service to suggest non-sensitive interests. Suggestions stay private and require your approval before use. This does not publish your entry.</span></span>
+                  <span><span className="block text-sm font-medium text-[#292a24] lg:text-slate-200">Allow OSA to analyse this entry</span><span className="mt-1 block text-xs leading-5 text-slate-500">Optional. If enabled, you can ask OSA to send this entry to its AI service to suggest non-sensitive interests. Suggestions stay private and require your approval before use. This does not publish your entry.</span></span>
                 </label>
                 <button disabled={saving || !body.trim()} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c7f36b] text-sm font-semibold text-[#10150a] disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving…" : "Save private entry"} <Send size={15}/></button>
               </form>
@@ -256,7 +256,7 @@ export default function MySpacePage() {
             </section>
 
             <aside className="space-y-5">
-              <div className="rounded-2xl border border-[#c7f36b]/15 bg-[#c7f36b]/5 p-5">
+              <div className="rounded-2xl border border-[#e2e5d9] bg-[#f0f2e9] lg:border-[#c7f36b]/15 lg:bg-[#c7f36b]/5 p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#d8f5a0]"><ShieldCheck size={17}/> Private by design</div>
                 <p className="mt-2 text-xs leading-5 text-slate-400">Your notes are protected by Supabase Row Level Security. Only your signed-in account can read, change or delete them. AI analysis is opt-in per entry and is not active yet.</p>
               </div>
@@ -271,7 +271,7 @@ export default function MySpacePage() {
                   <div className="space-y-2">{interestSignals.map((signal) => (
                     <div key={signal.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/10 px-3 py-3">
                       <div className="min-w-0"><p className="truncate text-sm text-slate-200">{signal.topic}</p><p className="mt-1 text-[10px] text-slate-500">{signal.source === "user_selected" ? "Added by you" : signal.source === "user_approved_entry" ? "Suggested from your diary" : "From saved content"} · {signal.status === "pending" ? "Awaiting your review" : signal.status === "approved" ? "Approved" : "Not approved"}</p></div>
-                      {signal.status === "pending" ? <div className="flex shrink-0 gap-1"><button type="button" onClick={() => reviewInterest(signal.id, "approved")} aria-label={`Approve ${signal.topic}`} className="rounded-lg p-2 text-[#c7f36b] hover:bg-[#c7f36b]/10"><Check size={16}/></button><button type="button" onClick={() => reviewInterest(signal.id, "rejected")} aria-label={`Reject ${signal.topic}`} className="rounded-lg p-2 text-red-300 hover:bg-red-400/10"><XCircle size={16}/></button></div> : <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] ${signal.status === "approved" ? "bg-[#c7f36b]/10 text-[#d8f5a0]" : "bg-white/5 text-slate-500"}`}>{signal.status === "approved" ? "Approved" : "Rejected"}</span>}
+                      {signal.status === "pending" ? <div className="flex shrink-0 gap-1"><button type="button" onClick={() => reviewInterest(signal.id, "approved")} aria-label={`Approve ${signal.topic}`} className="rounded-lg p-2 text-[#c7f36b] hover:bg-[#c7f36b]/10"><Check size={16}/></button><button type="button" onClick={() => reviewInterest(signal.id, "rejected")} aria-label={`Reject ${signal.topic}`} className="rounded-lg p-2 text-red-500 lg:text-red-500 lg:text-red-300 hover:bg-red-50 lg:bg-red-400/10"><XCircle size={16}/></button></div> : <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] ${signal.status === "approved" ? "bg-[#c7f36b]/10 text-[#d8f5a0]" : "bg-white/5 text-slate-500"}`}>{signal.status === "approved" ? "Approved" : "Rejected"}</span>}
                     </div>
                   ))}</div>
                 )}
@@ -289,9 +289,9 @@ export default function MySpacePage() {
         )}
       </div>
 
-      {entryPendingDelete && (
+      <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-[#e9e7df] bg-[#f7f6f1]/95 px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-2 backdrop-blur-xl lg:hidden"><Link href="/" className="flex flex-col items-center gap-1 py-1 text-[10px] font-medium text-[#85847b]"><Home size={19}/>Home</Link><Link href="/" className="flex flex-col items-center gap-1 py-1 text-[10px] font-medium text-[#85847b]"><Compass size={19}/>Discover</Link><Link href="/my-space" aria-current="page" className="flex flex-col items-center gap-1 py-1 text-[10px] font-semibold text-[#4e5044]"><NotebookPen size={19}/>My Space</Link></nav>\n\n      {entryPendingDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && !deleting) setEntryPendingDelete(null);
           }}
@@ -301,7 +301,7 @@ export default function MySpacePage() {
             aria-modal="true"
             aria-labelledby="delete-entry-title"
             aria-describedby="delete-entry-description"
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#141923] p-6 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-[#e7e5dd] bg-white lg:border-white/10 lg:bg-[#141923] lg:bg-[#141923] p-6 shadow-2xl"
           >
             <div className="mb-4 flex items-start justify-between">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-400/10 text-red-300">
@@ -312,7 +312,7 @@ export default function MySpacePage() {
                 onClick={() => setEntryPendingDelete(null)}
                 disabled={deleting}
                 aria-label="Close confirmation"
-                className="rounded-lg p-2 text-slate-500 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-[#f2f0e9] lg:hover:bg-white/5 hover:text-white disabled:opacity-50"
               >
                 <X size={18} />
               </button>
@@ -326,7 +326,7 @@ export default function MySpacePage() {
                 type="button"
                 onClick={() => setEntryPendingDelete(null)}
                 disabled={deleting}
-                className="h-11 rounded-xl border border-white/10 px-5 text-sm font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+                className="h-11 rounded-xl border border-[#e7e5dd] px-5 lg:border-white/10 text-sm font-medium text-[#55564e] lg:text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
               >
                 Cancel
               </button>
