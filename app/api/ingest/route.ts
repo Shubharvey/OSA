@@ -113,26 +113,21 @@ function assessForAutoPublish(item: FeedItem, source: Source, categories: string
 }
 
 function buildAutomaticBrief(item: FeedItem, source: Source, category: string, score: number, rawItemId: string) {
-  const description = item.description.trim().replace(/\s+/g, " ").slice(0, 1800);
-  const audiences: Record<string, string> = {
-    Markets: "Investors, financial-market professionals, analysts and businesses exposed to market movements.",
-    Startups: "Founders, startup operators, venture investors and people tracking private-market activity.",
-    Technology: "Technology leaders, builders, researchers and businesses assessing technology adoption.",
-    Career: "Job seekers, professionals, employers and people tracking workforce and skills trends.",
-    Learning: "Students, researchers and professionals looking for credible learning and research resources.",
-  };
-  const why: Record<string, string> = {
-    Markets: "This development may affect market conditions, financial institutions, asset prices or the wider economy. Follow the linked source for the underlying announcement and subsequent updates.",
-    Startups: "This development may influence startup competition, company strategy, funding or the wider innovation ecosystem.",
-    Technology: "This development may influence technology adoption, product capabilities, infrastructure or competitive positioning.",
-    Career: "This development may affect hiring demand, workplace priorities or the skills employers value.",
-    Learning: "This resource or research may offer useful knowledge, evidence or learning opportunities. Consult the original source for full details.",
-  };
-  const analysis = /\b(forecast|outlook|expects?|predicts?|analysis|opinion|could|may|might|likely|potential)\b/i.test(`${item.title} ${description}`);
-  const summary = `${description}\n\nWhy it matters\n${why[category]}\n\nWho should care\n${audiences[category]}\n\nEditorial note\nAutomatically prepared from the source description (automated quality score: ${score}/100). This is a source-based brief, not independent verification or investment advice.`;
+  // Keep the public post close to the publisher's own feed summary.
+  // Do not manufacture generic audience/impact sections from a category label.
+  const rawDescription = item.description.trim().replace(/\\s+/g, " ");
+  const maxLength = 1000;
+  let description = rawDescription.slice(0, maxLength);
+  if (rawDescription.length > maxLength) {
+    const lastSentence = Math.max(description.lastIndexOf(". "), description.lastIndexOf("? "), description.lastIndexOf("! "));
+    if (lastSentence > 500) description = description.slice(0, lastSentence + 1);
+    else description = description.replace(/\\s+\\S*$/, "") + "…";
+  }
+  const analysis = /\\b(forecast|outlook|expects?|predicts?|analysis|opinion|could|may|might|likely|potential)\\b/i.test(`${item.title} ${description}`);
+  const summary = description || "The publisher has not provided a summary. Open the original source for the full report.";
   const title = item.title.trim().slice(0, 180);
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 90) + "-" + rawItemId.slice(0, 8);
-  return { slug, category, eyebrow: analysis ? `${category.toUpperCase()} · ANALYSIS` : category.toUpperCase(), title, summary, source_name: source.name, source_url: item.link, published_at: item.publishedAt || new Date().toISOString(), reading_time_minutes: Math.max(1, Math.ceil(summary.split(/\s+/).length / 200)), signal_level: analysis ? "explainer" : score >= 88 ? "high_signal" : "worth_watching", is_featured: false, status: "published" };
+  return { slug, category, eyebrow: analysis ? `${category.toUpperCase()} · ANALYSIS` : category.toUpperCase(), title, summary, source_name: source.name, source_url: item.link, published_at: item.publishedAt || new Date().toISOString(), reading_time_minutes: 1, signal_level: analysis ? "explainer" : score >= 88 ? "high_signal" : "worth_watching", is_featured: false, status: "published" };
 }
 
 function canonicalize(rawUrl: string): string | null {
