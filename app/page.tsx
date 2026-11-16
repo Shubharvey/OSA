@@ -25,13 +25,20 @@ type FeedRow = {
   is_featured: boolean;
 };
 
+function cleanPublishedSummary(value: string): string {
+  // Remove the old auto-generated boilerplate from previously published briefs.
+  const legacySection = value.search(/\\n\\s*Why it matters\\s*\\n/i);
+  const sourceText = legacySection >= 0 ? value.slice(0, legacySection) : value;
+  return sourceText.trim();
+}
+
 function mapFeedRow(row: FeedRow): IntelligenceItem {
   return {
     id: row.id,
     category: row.category,
     eyebrow: row.eyebrow ?? row.category.toUpperCase(),
     title: row.title,
-    summary: row.summary,
+    summary: cleanPublishedSummary(row.summary),
     source: row.source_name,
     publishedAt: row.published_at
       ? new Date(row.published_at).toLocaleDateString("en", { day: "numeric", month: "short", year: "numeric" })
