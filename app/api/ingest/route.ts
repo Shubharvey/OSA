@@ -130,6 +130,46 @@ function buildAutomaticBrief(item: FeedItem, source: Source, category: string, s
   return { slug, category, eyebrow: analysis ? `${category.toUpperCase()} · ANALYSIS` : category.toUpperCase(), title, summary, source_name: source.name, source_url: item.link, published_at: item.publishedAt || new Date().toISOString(), reading_time_minutes: 1, signal_level: analysis ? "explainer" : score >= 88 ? "high_signal" : "worth_watching", is_featured: false, status: "published" };
 }
 
+type OpenverseImage = {
+  url?: string;
+  thumbnail?: string;
+  title?: string;
+  creator?: string;
+  attribution?: string;
+  foreign_landing_url?: string;
+  license?: string;
+  license_version?: string;
+  license_url?: string;
+};
+
+async function findOpenlyLicensedImage(title: string, category: string): Promise<{
+  image_url: string; image_alt: string; image_credit: string;
+  image_source_url: string; image_license: string; image_license_url: string;
+} | null> {
+  try {
+    const query = encodeURIComponent(`${title} ${category}`.slice(0, 180));
+    const response = await fetch(`https://api.openverse.org/v1/images/?q=${query}&license=cc0,pdm,by&aspect_ratio=wide&page_size=5`, {
+      headers: { "User-Agent": "OSA-IntelligenceBot/0.1" },
+      signal: AbortSignal.timeout(8000),
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const data = await response.json() as { results?: OpenverseImage[] };
+    const image = (data.results || []).find((entry) => entry.url && entry.foreign_landing_url && entry.license);
+    if (!image?.url || !image.foreign_landing_url) return null;
+    return {
+      image_url: image.url,
+      image_alt: (image.title || title).slice(0, 240),
+      image_credit: image.attribution || `${image.title || "Image"} by ${image.creator || "unknown creator"} · ${image.license || "open license"}`,
+      image_source_url: image.foreign_landing_url,
+      image_license: `${image.license || "Open license"}${image.license_version ? ` ${image.license_version}` : ""}`,
+      image_license_url: image.license_url || "https://creativecommons.org/",
+    };
+  } catch {
+    return null;
+  }
+}
+
 function canonicalize(rawUrl: string): string | null {
   try {
     const url = new URL(rawUrl);
@@ -285,6 +325,8 @@ export async function POST(request: NextRequest) {
         }
 
         const brief = buildAutomaticBrief(item, source, categories[0], decision.score, pending.id);
+        const media = await findOpenlyLicensedImage(item.title, categories[0]);
+        if (media) Object.assign(brief, media);
         const publishResponse = await fetch(`${supabaseUrl}/rest/v1/feed_entries?on_conflict=slug`, {
           method: "POST",
           headers: { ...restHeaders, Prefer: "resolution=ignore-duplicates,return=minimal" },
