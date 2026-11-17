@@ -23,6 +23,12 @@ type FeedRow = {
   reading_time_minutes: number | null;
   signal_level: "high_signal" | "worth_watching" | "explainer";
   is_featured: boolean;
+  image_url: string | null;
+  image_alt: string | null;
+  image_credit: string | null;
+  image_source_url: string | null;
+  image_license: string | null;
+  image_license_url: string | null;
 };
 
 function cleanPublishedSummary(value: string): string {
@@ -47,6 +53,12 @@ function mapFeedRow(row: FeedRow): IntelligenceItem {
     signal: row.signal_level === "high_signal" ? "High signal" : row.signal_level === "explainer" ? "Explainer" : "Worth watching",
     featured: row.is_featured,
     url: row.source_url,
+    imageUrl: row.image_url,
+    imageAlt: row.image_alt,
+    imageCredit: row.image_credit,
+    imageSourceUrl: row.image_source_url,
+    imageLicense: row.image_license,
+    imageLicenseUrl: row.image_license_url,
   };
 }
 
@@ -69,7 +81,7 @@ export default function HomePage() {
     const loadFeed = async (supabaseClient: NonNullable<typeof supabase>) => {
       const { data, error } = await supabaseClient
         .from("feed_entries")
-        .select("id, category, eyebrow, title, summary, source_name, source_url, published_at, reading_time_minutes, signal_level, is_featured")
+        .select("id, category, eyebrow, title, summary, source_name, source_url, published_at, reading_time_minutes, signal_level, is_featured, image_url, image_alt, image_credit, image_source_url, image_license, image_license_url")
         .eq("status", "published")
         .order("published_at", { ascending: false });
 
@@ -135,15 +147,15 @@ export default function HomePage() {
                 const heights=["h-36","h-48","h-40","h-32","h-52"];
                 return <article key={item.id} className="mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-[19px] bg-white shadow-[0_3px_14px_rgba(40,40,30,0.07)]">
                   <button type="button" onClick={() => setSelectedStory(item)} className="block w-full text-left">
-                    <div className={"relative "+heights[index%heights.length]+" overflow-hidden bg-gradient-to-br "+palette.bg}>
-                      <div className="absolute -right-7 -top-8 h-28 w-28 rounded-full border-[18px] border-white/20"/>
-                      <div className="absolute -bottom-10 -left-7 h-32 w-32 rounded-full bg-white/20"/>
-                      <div className="absolute inset-0 flex flex-col justify-between p-3" style={{color:palette.ink}}>
+                    <div className={"relative "+heights[index%heights.length]+" overflow-hidden bg-gradient-to-br "+palette.bg}>{item.imageUrl ? <img src={item.imageUrl} alt={item.imageAlt || item.title} className="h-full w-full object-cover"/> : null}
+                      {!item.imageUrl ? <div className="absolute -right-7 -top-8 h-28 w-28 rounded-full border-[18px] border-white/20"/> : null}
+                      {!item.imageUrl ? <div className="absolute -bottom-10 -left-7 h-32 w-32 rounded-full bg-white/20"/> : null}
+                      {!item.imageUrl ? <div className="absolute inset-0 flex flex-col justify-between p-3" style={{color:palette.ink}}>
                         <span className="w-fit rounded-full bg-white/55 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em]">{item.category}</span>
                         <div><span className="text-[9px] font-bold tracking-[0.16em] opacity-65">OSA / FIELD NOTES</span><div className="mt-1 text-xl font-black leading-[0.95] tracking-tight">{item.category==="Markets"?"MARKET\nPULSE":item.category==="Startups"?"NEXT\nWAVE":item.category==="Technology"?"TECH\nSHIFT":item.category==="Career"?"CAREER\nEDGE":"LEARN\nMORE"}</div></div>
                       </div>
                     </div>
-                    <div className="p-3"><p className="text-[9px] font-semibold uppercase tracking-wide text-[#a3645c]">{item.source}</p><h2 className="mt-1.5 text-[13px] font-semibold leading-[1.35] text-[#292a24]">{item.title}</h2><p className="mt-2 line-clamp-3 text-[10px] leading-[1.5] text-[#85847b]">{item.summary}</p><div className="mt-3 flex items-center justify-between border-t border-[#f0eee8] pt-2"><span className="text-[9px] text-[#99988f]">{item.publishedAt}</span><span className="text-[9px] font-semibold" style={{color:palette.tag}}>{item.readTime}</span></div></div>
+                    <div className="p-3"><p className="text-[9px] font-semibold uppercase tracking-wide text-[#a3645c]">{item.source}</p><h2 className="mt-1.5 text-[13px] font-semibold leading-[1.35] text-[#292a24]">{item.title}</h2><p className="mt-2 line-clamp-3 text-[10px] leading-[1.5] text-[#85847b]">{item.summary}</p><div className="mt-3 flex items-center justify-between border-t border-[#f0eee8] pt-2"><span className="text-[9px] text-[#99988f]">{item.publishedAt}</span><span className="text-[9px] font-semibold" style={{color:palette.tag}}>Read more ↗</span></div></div>
                   </button>
                 </article>;
               })}
@@ -156,7 +168,7 @@ export default function HomePage() {
               <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e9e7df] bg-[#f7f6f1]/95 px-5 py-4 backdrop-blur-xl"><span className="text-xs font-bold tracking-[0.18em] text-[#4e5044]">OSA STORY</span><button onClick={() => setSelectedStory(null)} aria-label="Close story" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9e8df] text-lg text-[#4e5044]">×</button></div>
               <div className="px-5 pb-7 pt-5 sm:px-8">
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#a3645c]"><span>{selectedStory.category}</span><span>·</span><span>{selectedStory.publishedAt}</span></div>
-                <h2 id="story-reader-title" className="mt-3 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{selectedStory.title}</h2>
+                {selectedStory.imageUrl ? <div className="mt-5 overflow-hidden rounded-2xl"><img src={selectedStory.imageUrl} alt={selectedStory.imageAlt || selectedStory.title} className="max-h-72 w-full object-cover"/>{selectedStory.imageCredit ? <div className="bg-white px-3 py-2 text-[10px] leading-4 text-[#85847b]">Image: {selectedStory.imageCredit} · <a href={selectedStory.imageSourceUrl || "#"} target="_blank" rel="noreferrer" className="underline">Source</a> · <a href={selectedStory.imageLicenseUrl || "#"} target="_blank" rel="noreferrer" className="underline">{selectedStory.imageLicense || "Licence"}</a></div> : null}</div> : null}\n                <h2 id="story-reader-title" className="mt-3 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{selectedStory.title}</h2>
                 <div className="mt-4 flex items-center justify-between border-b border-[#e9e7df] pb-4"><div><p className="text-xs font-semibold text-[#4e5044]">{selectedStory.source}</p><p className="mt-1 text-[11px] text-[#929087]">{selectedStory.readTime} · {selectedStory.signal}</p></div><span className="rounded-full bg-[#e9e8df] px-3 py-1.5 text-[10px] font-semibold text-[#4e5044]">OSA brief</span></div>
                 <div className="prose prose-sm mt-6 max-w-none whitespace-pre-line text-[14px] leading-7 text-[#55564e]">{selectedStory.summary}</div>
                 <div className="mt-7 rounded-2xl border border-[#e6e3d9] bg-white p-4">
