@@ -363,6 +363,30 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Gradually add licensed images to older published stories as well.
+  let imagesEnriched = 0;
+  try {
+    const missingImagesResponse = await fetch(
+      `${supabaseUrl}/rest/v1/feed_entries?status=eq.published&image_url=is.null&select=id,title,category&order=published_at.desc&limit=5`,
+      { headers: restHeaders, cache: "no-store" },
+    );
+    if (missingImagesResponse.ok) {
+      const missingImages = await missingImagesResponse.json() as Array<{ id: string; title: string; category: string }>;
+      for (const story of missingImages) {
+        const media = await findOpenlyLicensedImage(story.title, story.category);
+        if (!media) continue;
+        const imageUpdate = await fetch(`${supabaseUrl}/rest/v1/feed_entries?id=eq.${story.id}&image_url=is.null`, {
+          method: "PATCH",
+          headers: { ...restHeaders, Prefer: "return=minimal" },
+          body: JSON.stringify(media),
+        });
+        if (imageUpdate.ok) imagesEnriched += 1;
+      }
+    }
+  } catch {
+    // Image enrichment is optional; collection and publishing must continue if it is unavailable.
+  }
+
   return NextResponse.json({
     ok: failures.length === 0,
     sources_checked: dueSources.length,
@@ -374,6 +398,7 @@ export async function POST(request: NextRequest) {
     auto_published: autoPublished,
     held_for_review: heldForReview,
     auto_rejected_below_60: autoRejected,
+    existing_stories_image_enriched: imagesEnriched,
     publishing_policy: "Automatically reject items scoring below 60/100 (retaining their records for deduplication and audit), hold items scoring 60–72 or failing safeguards for review, and publish items scoring above 72/100 only when all source trust, freshness, detail, category, HTTPS-link and uncertainty safeguards pass.",
   });
 }
