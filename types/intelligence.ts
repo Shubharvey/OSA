@@ -12,4 +12,10 @@ export type IntelligenceItem = {
   signal: "High signal" | "Worth watching" | "Explainer";
   featured?: boolean;
   url: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  imageCredit?: string | null;
+  imageSourceUrl?: string | null;
+  imageLicense?: string | null;
+  imageLicenseUrl?: string | null;
 };
