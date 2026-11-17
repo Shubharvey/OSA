@@ -4,7 +4,7 @@ import type { IntelligenceItem } from "@/types/intelligence";
 export function IntelligenceCard({ item, featured = false }: { item: IntelligenceItem; featured?: boolean }) {
   return (
     <article className={`group flex h-full min-w-0 flex-col rounded-2xl border border-white/10 bg-[#11151d] p-4 transition hover:border-[#c7f36b]/40 hover:bg-[#141a22] sm:p-5 ${featured ? "md:p-7" : ""}`}>
-      <div className="mb-5 flex items-center justify-between gap-3">
+      {item.imageUrl ? <div className="mb-4 overflow-hidden rounded-xl"><img src={item.imageUrl} alt={item.imageAlt || item.title} className="h-44 w-full object-cover"/>{item.imageCredit ? <p className="px-2 pt-1 text-[9px] text-slate-500">Image: {item.imageCredit} · {item.imageLicense || "Open licence"}</p> : null}</div> : null}\n      <div className="mb-5 flex items-center justify-between gap-3">
         <span className="min-w-0 break-words text-[10px] font-bold tracking-[0.12em] text-[#c7f36b]">{item.eyebrow}</span>
         <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] text-slate-400">{item.signal}</span>
       </div>
