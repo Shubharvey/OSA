@@ -153,7 +153,7 @@ export default function HomePage() {
                       {!item.imageUrl ? <div className="absolute inset-0 flex flex-col justify-between p-3" style={{color:palette.ink}}>
                         <span className="w-fit rounded-full bg-white/55 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em]">{item.category}</span>
                         <div><span className="text-[9px] font-bold tracking-[0.16em] opacity-65">OSA / FIELD NOTES</span><div className="mt-1 text-xl font-black leading-[0.95] tracking-tight">{item.category==="Markets"?"MARKET\nPULSE":item.category==="Startups"?"NEXT\nWAVE":item.category==="Technology"?"TECH\nSHIFT":item.category==="Career"?"CAREER\nEDGE":"LEARN\nMORE"}</div></div>
-                      </div>
+                      </div> : null}
                     </div>
                     <div className="p-3"><p className="text-[9px] font-semibold uppercase tracking-wide text-[#a3645c]">{item.source}</p><h2 className="mt-1.5 text-[13px] font-semibold leading-[1.35] text-[#292a24]">{item.title}</h2><p className="mt-2 line-clamp-3 text-[10px] leading-[1.5] text-[#85847b]">{item.summary}</p><div className="mt-3 flex items-center justify-between border-t border-[#f0eee8] pt-2"><span className="text-[9px] text-[#99988f]">{item.publishedAt}</span><span className="text-[9px] font-semibold" style={{color:palette.tag}}>Read more ↗</span></div></div>
                   </button>
